@@ -61,7 +61,7 @@ std::vector<std::string> list_dir(const std::string &path) {
             continue;
         }
 
-        files.push_back(path + "/" + name);
+        files.push_back(name);
     }
 
     closedir(dir);
