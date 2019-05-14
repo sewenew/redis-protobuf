@@ -23,6 +23,25 @@
 
 namespace {
 
+struct StringDeleter {
+    void operator()(char *str) const {
+        if (str != nullptr) {
+            RedisModule_Free(str);
+        }
+    }
+};
+
+using StringUPtr = std::unique_ptr<char, StringDeleter>;
+
+struct RDBString {
+    StringUPtr str;
+    std::size_t len;
+};
+
+RDBString rdb_load_string(RedisModuleIO *rdb);
+
+std::pair<RDBString, RDBString> rdb_load_value(RedisModuleIO *rdb);
+
 std::pair<std::string, std::string> serialize_message(void *value);
 
 }
@@ -38,50 +57,35 @@ RedisModuleType *redis_proto = nullptr;
 std::unique_ptr<ProtoFactory> proto_factory;
 
 void* rdb_load(RedisModuleIO *rdb, int encver) {
-    assert(rdb != nullptr);
+    try {
+        assert(rdb != nullptr);
 
-    if (encver != ENCODING_VERSION) {
-        RedisModule_LogIOError(rdb, "warning", "cannot load protobuf of version: %d", encver);
+        if (encver != ENCODING_VERSION) {
+            throw Error("cannot load data of version: " + std::to_string(encver));
+        }
+
+        RDBString type_str;
+        RDBString data_str;
+        std::tie(type_str, data_str) = rdb_load_value(rdb);
+
+        auto type = std::string(type_str.str.get(), type_str.len);
+
+        assert(proto_factory);
+
+        auto msg = proto_factory->create(type);
+        if (!msg) {
+            throw Error("unknown protobuf type: " + type);
+        }
+
+        if (!msg->ParseFromArray(data_str.str.get(), data_str.len)) {
+            throw Error("failed to parse protobuf of type: " + type);
+        }
+
+        return msg.release();
+    } catch (const Error &e) {
+        RedisModule_LogIOError(rdb, "warning", e.what());
         return nullptr;
     }
-
-    std::size_t len = 0;
-    auto *buf = RedisModule_LoadStringBuffer(rdb, &len);
-    if (buf == nullptr) {
-        RedisModule_LogIOError(rdb, "warning", "failed to load string buffer for type info");
-        return nullptr;
-    }
-
-    auto type = std::string(buf, len);
-
-    assert(proto_factory);
-
-    auto msg = proto_factory->create(type);
-    if (!msg) {
-        RedisModule_LogIOError(rdb,
-                                "warning",
-                                "unknown protobuf type: %b",
-                                type.data(),
-                                type.size());
-        return nullptr;
-    }
-
-    buf = RedisModule_LoadStringBuffer(rdb, &len);
-    if (buf == nullptr) {
-        RedisModule_LogIOError(rdb, "warning", "failed to load string buffer for protobuf data");
-        return nullptr;
-    }
-
-    if (!msg->ParseFromArray(buf, len)) {
-        RedisModule_LogIOError(rdb,
-                                "warning",
-                                "failed to parse protobuf of type: %b",
-                                type.data(),
-                                type.size());
-        return nullptr;
-    }
-
-    return msg.release();
 }
 
 void rdb_save(RedisModuleIO *rdb, void *value) {
@@ -140,18 +144,38 @@ void free_msg(void *value) {
 
 namespace {
 
-std::pair<std::string, std::string> serialize_message(void *value) {
-    if (value == nullptr) {
-        throw sw::redis::pb::Error("Null value to serialize");
+namespace rpb = sw::redis::pb;
+
+RDBString rdb_load_string(RedisModuleIO *rdb) {
+    std::size_t len = 0;
+    auto *buf = RedisModule_LoadStringBuffer(rdb, &len);
+    if (buf == nullptr) {
+        throw rpb::Error("failed to load string buffer from rdb");
     }
 
-    auto *msg = static_cast<sw::redis::pb::gpb::Message*>(value);
+    return {StringUPtr(buf), len};
+}
+
+std::pair<RDBString, RDBString> rdb_load_value(RedisModuleIO *rdb) {
+    auto type = rdb_load_string(rdb);
+
+    auto data = rdb_load_string(rdb);
+
+    return {std::move(type), std::move(data)};
+}
+
+std::pair<std::string, std::string> serialize_message(void *value) {
+    if (value == nullptr) {
+        throw rpb::Error("Null value to serialize");
+    }
+
+    auto *msg = static_cast<rpb::gpb::Message*>(value);
 
     auto type = msg->GetTypeName();
 
     std::string buf;
     if (!msg->SerializeToString(&buf)) {
-        throw sw::redis::pb::Error("failed to serialize protobuf message of type " + type);
+        throw rpb::Error("failed to serialize protobuf message of type " + type);
     }
 
     return {std::move(type), std::move(buf)};
