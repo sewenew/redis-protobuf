@@ -15,19 +15,13 @@
  *************************************************************************/
 
 #include "module_entry.h"
-#include <unistd.h>
 #include <cassert>
 #include <string>
 #include "redis_protobuf.h"
 #include "errors.h"
+#include "options.h"
 
 namespace {
-
-struct Options {
-    std::string proto_dir;
-};
-
-Options parse_options(RedisModuleString **argv, int argc);
 
 void create_commands(RedisModuleCtx *ctx);
 
@@ -46,7 +40,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
             throw rpb::Error("fail to init redis module");
         }
 
-        auto opts = parse_options(argv, argc);
+        rpb::Options::instance().load(argv, argc);
 
         RedisModuleTypeMethods tm = {
             .version = REDISMODULE_TYPE_METHOD_VERSION,
@@ -65,7 +59,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         }
 
         rpb::proto_factory = std::unique_ptr<rpb::ProtoFactory>(
-                                new rpb::ProtoFactory(opts.proto_dir));
+                                new rpb::ProtoFactory(rpb::Options::instance().proto_dir));
 
         create_commands(ctx);
 
@@ -80,39 +74,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 namespace {
 
 namespace rpb = sw::redis::pb;
-
-Options parse_options(RedisModuleString **argv, int argc) {
-    std::vector<char*> argvs;
-    argvs.reserve(argc + 1);
-    argvs.push_back(const_cast<char*>(rpb::MODULE_NAME));
-    for (auto idx = 0; idx != argc; ++idx) {
-        argvs.push_back(const_cast<char*>(RedisModule_StringPtrLen(argv[idx], nullptr)));
-    }
-
-    Options opts;
-    int opt = 0;
-    while ((opt = getopt(argc + 1, argvs.data(), "d:")) != -1) {
-        try {
-            switch (opt) {
-            case 'd':
-                opts.proto_dir = optarg;
-                break;
-
-            default:
-                throw rpb::Error("Unknown command line option");
-                break;
-            }
-        } catch (const rpb::Error &e) {
-            throw;
-        }
-    }
-
-    if (opts.proto_dir.empty()) {
-        throw rpb::Error("proto directory is not specified with -p option");
-    }
-
-    return opts;
-}
 
 void create_commands(RedisModuleCtx * /*ctx*/) {
     /*
