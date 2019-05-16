@@ -15,7 +15,7 @@
  *************************************************************************/
 
 #include "proto_factory.h"
-#include "file_utils.h"
+#include "io_utils.h"
 #include "errors.h"
 
 namespace sw {
@@ -76,9 +76,9 @@ const gpb::Descriptor* ProtoFactory::descriptor(const std::string &type) {
 }
 
 void ProtoFactory::_load_protos(const std::string &proto_dir) {
-    auto files = fs::list_dir(proto_dir);
+    auto files = io::list_dir(proto_dir);
     for (const auto &file : files) {
-        if (!fs::is_regular(proto_dir + "/" + file) || fs::extension(file) != "proto") {
+        if (!io::is_regular(proto_dir + "/" + file) || io::extension(file) != "proto") {
             continue;
         }
 

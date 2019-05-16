@@ -14,7 +14,7 @@
    limitations under the License.
  *************************************************************************/
 
-#include "file_utils.h"
+#include "io_utils.h"
 #include <sys/stat.h>
 #include <dirent.h>
 #include "errors.h"
@@ -31,7 +31,7 @@ namespace redis {
 
 namespace pb {
 
-namespace fs {
+namespace io {
 
 bool is_regular(const std::string &file) {
     return S_ISREG(file_type(file));

@@ -14,8 +14,8 @@
    limitations under the License.
  *************************************************************************/
 
-#ifndef SEWENEW_REDISPROTOBUF_FILE_UTILS_H
-#define SEWENEW_REDISPROTOBUF_FILE_UTILS_H
+#ifndef SEWENEW_REDISPROTOBUF_IO_UTILS_H
+#define SEWENEW_REDISPROTOBUF_IO_UTILS_H
 
 #include <string>
 #include <vector>
@@ -26,7 +26,7 @@ namespace redis {
 
 namespace pb {
 
-namespace fs {
+namespace io {
 
 bool is_regular(const std::string &file);
 
@@ -44,4 +44,4 @@ std::string extension(const std::string &file);
 
 }
 
-#endif // end SEWENEW_REDISPROTOBUF_FILE_UTILS_H
+#endif // end SEWENEW_REDISPROTOBUF_IO_UTILS_H
