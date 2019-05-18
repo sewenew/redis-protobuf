@@ -14,17 +14,52 @@
    limitations under the License.
  *************************************************************************/
 
-#ifndef SEWENEW_REDISPROTOBUF_IO_UTILS_H
-#define SEWENEW_REDISPROTOBUF_IO_UTILS_H
+#ifndef SEWENEW_REDISPROTOBUF_UTILS_H
+#define SEWENEW_REDISPROTOBUF_UTILS_H
 
 #include <string>
 #include <vector>
+#include <google/protobuf/message.h>
+#include "module_api.h"
 
 namespace sw {
 
 namespace redis {
 
 namespace pb {
+
+namespace gp = google::protobuf;
+
+// By now, not all compilers support std::string_view,
+// so we make our own implementation.
+class StringView {
+public:
+    constexpr StringView() noexcept = default;
+
+    constexpr StringView(const char *data, std::size_t size) : _data(data), _size(size) {}
+
+    StringView(const char *data) : _data(data), _size(std::strlen(data)) {}
+
+    StringView(const std::string &str) : _data(str.data()), _size(str.size()) {}
+
+    StringView(RedisModuleString *str);
+
+    constexpr StringView(const StringView &) noexcept = default;
+
+    StringView& operator=(const StringView &) noexcept = default;
+
+    constexpr const char* data() const noexcept {
+        return _data;
+    }
+
+    constexpr std::size_t size() const noexcept {
+        return _size;
+    }
+
+private:
+    const char *_data = nullptr;
+    std::size_t _size = 0;
+};
 
 namespace io {
 
@@ -44,4 +79,4 @@ std::string extension(const std::string &file);
 
 }
 
-#endif // end SEWENEW_REDISPROTOBUF_IO_UTILS_H
+#endif // end SEWENEW_REDISPROTOBUF_UTILS_H

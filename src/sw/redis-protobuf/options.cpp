@@ -26,16 +26,12 @@ namespace redis {
 
 namespace pb {
 
-Options& Options::instance() {
-    static Options opts;
-
-    return opts;
-}
-
 void Options::load(RedisModuleString **argv, int argc) {
     std::vector<char*> argvs;
     argvs.reserve(argc + 1);
-    argvs.push_back(const_cast<char*>(MODULE_NAME));
+    // Add a fake module name explicitly, so that we can use getopt to parse arguments.
+    std::string module_name;
+    argvs.push_back(const_cast<char*>(module_name.data()));
     for (auto idx = 0; idx != argc; ++idx) {
         argvs.push_back(const_cast<char*>(RedisModule_StringPtrLen(argv[idx], nullptr)));
     }

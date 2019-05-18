@@ -31,4 +31,71 @@ extern "C" {
 
 #endif
 
+#include <memory>
+#include <google/protobuf/message.h>
+#include "errors.h"
+
+namespace sw {
+
+namespace redis {
+
+namespace pb {
+
+namespace api {
+
+template <typename ...Args>
+void warning(RedisModuleCtx *ctx, Args &&...args) {
+    RedisModule_Log(ctx, "warning", std::forward<Args>(args)...);
+}
+
+template <typename ...Args>
+void notice(RedisModuleCtx *ctx, Args &&...args) {
+    RedisModule_Log(ctx, "notice", std::forward<Args>(args)...);
+}
+
+template <typename ...Args>
+void debug(RedisModuleCtx *ctx, Args &&...args) {
+    RedisModule_Log(ctx, "debug", std::forward<Args>(args)...);
+}
+
+template <typename ...Args>
+void verbose(RedisModuleCtx *ctx, Args &&...args) {
+    RedisModule_Log(ctx, "verbose", std::forward<Args>(args)...);
+}
+
+struct RedisKeyCloser {
+    void operator()(RedisModuleKey *key) const {
+        RedisModule_CloseKey(key);
+    }
+};
+
+using RedisKey = std::unique_ptr<RedisModuleKey, RedisKeyCloser>;
+
+enum class KeyMode {
+    READONLY,
+    WRITEONLY,
+    READWRITE
+};
+
+RedisKey open_key(RedisModuleCtx *ctx, RedisModuleString *name, KeyMode mode);
+
+// If key doesn't exist return false.
+// If key type is NOT *key_type*, throw WrongTypeError.
+// Otherwise, return true.
+bool key_exists(RedisModuleKey *key, RedisModuleType *key_type);
+
+int reply_with_error(RedisModuleCtx *ctx, const Error &err);
+
+inline google::protobuf::Message* get_msg_by_key(RedisModuleKey *key) {
+    return static_cast<google::protobuf::Message *>(RedisModule_ModuleTypeGetValue(key));
+}
+
+}
+
+}
+
+}
+
+}
+
 #endif // end SEWENEW_REDISPROTOBUF_MODULE_API_H

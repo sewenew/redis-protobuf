@@ -14,9 +14,10 @@
    limitations under the License.
  *************************************************************************/
 
-#include "io_utils.h"
+#include "utils.h"
 #include <sys/stat.h>
 #include <dirent.h>
+#include <cassert>
 #include "errors.h"
 
 namespace {
@@ -30,6 +31,14 @@ namespace sw {
 namespace redis {
 
 namespace pb {
+
+StringView::StringView(RedisModuleString *str) {
+    if (str == nullptr) {
+        throw Error("null string");
+    }
+
+    _data = RedisModule_StringPtrLen(str, &_size);
+}
 
 namespace io {
 

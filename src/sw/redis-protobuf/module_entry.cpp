@@ -16,87 +16,23 @@
 
 #include "module_entry.h"
 #include <cassert>
-#include <string>
 #include "redis_protobuf.h"
 #include "errors.h"
-#include "options.h"
-
-namespace {
-
-void create_commands(RedisModuleCtx *ctx);
-
-}
+#include "module_api.h"
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    namespace rpb = sw::redis::pb;
-
     assert(ctx != nullptr);
 
+    using namespace sw::redis::pb;
+
     try {
-        if (RedisModule_Init(ctx,
-                                rpb::MODULE_NAME,
-                                rpb::MODULE_VERSION,
-                                REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
-            throw rpb::Error("fail to init redis module");
-        }
+        auto &module = RedisProtobuf::instance();
 
-        rpb::Options::instance().load(argv, argc);
-
-        RedisModuleTypeMethods tm = {
-            .version = REDISMODULE_TYPE_METHOD_VERSION,
-            .rdb_load = rpb::rdb_load,
-            .rdb_save = rpb::rdb_save,
-            .aof_rewrite = rpb::aof_rewrite,
-            .free = rpb::free_msg
-        };
-
-        rpb::redis_proto = RedisModule_CreateDataType(ctx,
-                                                        rpb::TYPE_NAME,
-                                                        rpb::ENCODING_VERSION,
-                                                        &tm);
-        if (rpb::redis_proto == nullptr) {
-            throw rpb::Error(std::string("failed to create ") + rpb::TYPE_NAME + "type");
-        }
-
-        rpb::proto_factory = std::unique_ptr<rpb::ProtoFactory>(
-                                new rpb::ProtoFactory(rpb::Options::instance().proto_dir));
-
-        create_commands(ctx);
-
-    } catch (const rpb::Error &e) {
-        RedisModule_Log(ctx, "warning", e.what());
+        module.load(ctx, argv, argc);
+    } catch (const Error &e) {
+        api::warning(ctx, e.what());
         return REDISMODULE_ERR;
     }
 
     return REDISMODULE_OK;
-}
-
-namespace {
-
-namespace rpb = sw::redis::pb;
-
-void create_commands(RedisModuleCtx * /*ctx*/) {
-    /*
-    if (RedisModule_CreateCommand(ctx,
-                                    "PB.SET",
-                                    set_command,
-                                    "write deny-oom",
-                                    1,
-                                    1,
-                                    1) == REDISMODULE_ERR) {
-        throw rpb::Error("fail to create set command");
-    }
-
-    if (RedisModule_CreateCommand(ctx,
-                                    "PB.GET",
-                                    get_command,
-                                    "readonly",
-                                    1,
-                                    1,
-                                    1) == REDISMODULE_ERR) {
-        throw rpb::Error("fail to create get command");
-    }
-    */
-}
-
 }

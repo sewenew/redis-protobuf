@@ -14,11 +14,10 @@
    limitations under the License.
  *************************************************************************/
 
-#ifndef SEWENEW_REDISPROTOBUF_OPTIONS_H
-#define SEWENEW_REDISPROTOBUF_OPTIONS_H
+#ifndef SEWENEW_REDISPROTOBUF_COMMANDS_H
+#define SEWENEW_REDISPROTOBUF_COMMANDS_H
 
 #include "module_api.h"
-#include <string>
 
 namespace sw {
 
@@ -26,11 +25,7 @@ namespace redis {
 
 namespace pb {
 
-struct Options {
-    void load(RedisModuleString **argv, int argc);
-
-    std::string proto_dir;
-};
+void create_commands(RedisModuleCtx *ctx);
 
 }
 
@@ -38,4 +33,4 @@ struct Options {
 
 }
 
-#endif // end SEWENEW_REDISPROTOBUF_OPTIONS_H
+#endif // end SEWENEW_REDISPROTOBUF_COMMANDS_H

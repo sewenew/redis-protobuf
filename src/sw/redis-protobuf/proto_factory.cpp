@@ -15,7 +15,8 @@
  *************************************************************************/
 
 #include "proto_factory.h"
-#include "io_utils.h"
+#include <google/protobuf/util/json_util.h>
+#include "utils.h"
 #include "errors.h"
 
 namespace sw {
@@ -61,7 +62,7 @@ ProtoFactory::ProtoFactory(const std::string &proto_dir) :
 MsgUPtr ProtoFactory::create(const std::string &type) {
     const auto *desc = descriptor(type);
     if (desc == nullptr) {
-        return nullptr;
+        throw Error("unknown protobuf type: " + type);
     }
 
     const auto *prototype = _factory.GetPrototype(desc);
@@ -71,7 +72,26 @@ MsgUPtr ProtoFactory::create(const std::string &type) {
     return MsgUPtr(prototype->New());
 }
 
-const gpb::Descriptor* ProtoFactory::descriptor(const std::string &type) {
+MsgUPtr ProtoFactory::create(const std::string &type, const StringView &sv) {
+    auto msg = create(type);
+
+    const auto *ptr = sv.data();
+    auto len = sv.size();
+    if (len >= 2 && ptr[0] == '{' && ptr[len - 1] == '}') {
+        auto status = gp::util::JsonStringToMessage(gp::StringPiece(ptr, len), msg.get());
+        if (!status.ok()) {
+            throw Error("failed to parse json to protobuf of type: " + type);
+        }
+    } else {
+        if (!msg->ParseFromArray(ptr, len)) {
+            throw Error("failed to parse binary to protobuf of type: " + type);
+        }
+    }
+
+    return msg;
+}
+
+const gp::Descriptor* ProtoFactory::descriptor(const std::string &type) {
     return _importer.pool()->FindMessageTypeByName(type);
 }
 

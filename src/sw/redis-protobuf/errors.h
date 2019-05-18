@@ -46,6 +46,19 @@ private:
     std::string _msg;
 };
 
+class WrongTypeError : public Error {
+public:
+    explicit WrongTypeError(const std::string &msg) : Error(msg) {}
+
+    WrongTypeError(const WrongTypeError &) = default;
+    WrongTypeError& operator=(const WrongTypeError &) = default;
+
+    WrongTypeError(WrongTypeError &&) = default;
+    WrongTypeError& operator=(WrongTypeError &&) = default;
+
+    virtual ~WrongTypeError() = default;
+};
+
 }
 
 }

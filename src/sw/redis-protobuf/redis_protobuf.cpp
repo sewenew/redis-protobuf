@@ -18,8 +18,8 @@
 #include <cassert>
 #include <string>
 #include <google/protobuf/message.h>
-#include "proto_factory.h"
 #include "errors.h"
+#include "commands.h"
 
 namespace {
 
@@ -52,15 +52,52 @@ namespace redis {
 
 namespace pb {
 
-RedisModuleType *redis_proto = nullptr;
+RedisProtobuf& RedisProtobuf::instance() {
+    static RedisProtobuf redis_proto;
 
-std::unique_ptr<ProtoFactory> proto_factory;
+    return redis_proto;
+}
 
-void* rdb_load(RedisModuleIO *rdb, int encver) {
+void RedisProtobuf::load(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    assert(ctx != nullptr);
+
+    if (RedisModule_Init(ctx,
+                module_name().data(),
+                module_version(),
+                REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
+        throw Error("fail to init module of " + module_name() + " type");
+    }
+
+    _options.load(argv, argc);
+
+    RedisModuleTypeMethods methods = {
+        .version = REDISMODULE_TYPE_METHOD_VERSION,
+        .rdb_load = _rdb_load,
+        .rdb_save = _rdb_save,
+        .aof_rewrite = _aof_rewrite,
+        .free = _free_msg
+    };
+
+    _module_type = RedisModule_CreateDataType(ctx,
+            type_name().data(),
+            encoding_version(),
+            &methods);
+    if (_module_type == nullptr) {
+        throw Error(std::string("failed to create ") + type_name() + " type");
+    }
+
+    _proto_factory = std::unique_ptr<ProtoFactory>(new ProtoFactory(options().proto_dir));
+
+    create_commands(ctx);
+}
+
+void* RedisProtobuf::_rdb_load(RedisModuleIO *rdb, int encver) {
     try {
         assert(rdb != nullptr);
 
-        if (encver != ENCODING_VERSION) {
+        auto &module = RedisProtobuf::instance();
+
+        if (encver != module.encoding_version()) {
             throw Error("cannot load data of version: " + std::to_string(encver));
         }
 
@@ -70,9 +107,11 @@ void* rdb_load(RedisModuleIO *rdb, int encver) {
 
         auto type = std::string(type_str.str.get(), type_str.len);
 
-        assert(proto_factory);
+        auto *factory = module.proto_factory();
 
-        auto msg = proto_factory->create(type);
+        assert(factory != nullptr);
+
+        auto msg = factory->create(type);
         if (!msg) {
             throw Error("unknown protobuf type: " + type);
         }
@@ -88,7 +127,7 @@ void* rdb_load(RedisModuleIO *rdb, int encver) {
     }
 }
 
-void rdb_save(RedisModuleIO *rdb, void *value) {
+void RedisProtobuf::_rdb_save(RedisModuleIO *rdb, void *value) {
     try {
         assert(rdb != nullptr);
 
@@ -104,7 +143,7 @@ void rdb_save(RedisModuleIO *rdb, void *value) {
     }
 }
 
-void aof_rewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
+void RedisProtobuf::_aof_rewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
     try {
         assert(aof != nullptr);
 
@@ -117,21 +156,21 @@ void aof_rewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
         std::tie(type, buf) = serialize_message(value);
 
         RedisModule_EmitAOF(aof,
-                            "PB.SET",
-                            "sbb",
-                            key,
-                            type.data(),
-                            type.size(),
-                            buf.data(),
-                            buf.size());
+                "PB.SET",
+                "sbb",
+                key,
+                type.data(),
+                type.size(),
+                buf.data(),
+                buf.size());
     } catch (const Error &e) {
         RedisModule_LogIOError(aof, "warning", e.what());
     }
 }
 
-void free_msg(void *value) {
+void RedisProtobuf::_free_msg(void *value) {
     if (value != nullptr) {
-        auto *msg = static_cast<gpb::Message*>(value);
+        auto *msg = static_cast<google::protobuf::Message *>(value);
         delete msg;
     }
 }
@@ -144,13 +183,13 @@ void free_msg(void *value) {
 
 namespace {
 
-namespace rpb = sw::redis::pb;
+using sw::redis::pb::Error;
 
 RDBString rdb_load_string(RedisModuleIO *rdb) {
     std::size_t len = 0;
     auto *buf = RedisModule_LoadStringBuffer(rdb, &len);
     if (buf == nullptr) {
-        throw rpb::Error("failed to load string buffer from rdb");
+        throw Error("failed to load string buffer from rdb");
     }
 
     return {StringUPtr(buf), len};
@@ -166,16 +205,16 @@ std::pair<RDBString, RDBString> rdb_load_value(RedisModuleIO *rdb) {
 
 std::pair<std::string, std::string> serialize_message(void *value) {
     if (value == nullptr) {
-        throw rpb::Error("Null value to serialize");
+        throw Error("Null value to serialize");
     }
 
-    auto *msg = static_cast<rpb::gpb::Message*>(value);
+    auto *msg = static_cast<google::protobuf::Message*>(value);
 
     auto type = msg->GetTypeName();
 
     std::string buf;
     if (!msg->SerializeToString(&buf)) {
-        throw rpb::Error("failed to serialize protobuf message of type " + type);
+        throw Error("failed to serialize protobuf message of type " + type);
     }
 
     return {std::move(type), std::move(buf)};

@@ -22,6 +22,7 @@
 #include <google/protobuf/message.h>
 #include <google/protobuf/compiler/importer.h>
 #include <google/protobuf/dynamic_message.h>
+#include "utils.h"
 
 namespace sw {
 
@@ -29,9 +30,7 @@ namespace redis {
 
 namespace pb {
 
-namespace gpb = google::protobuf;
-
-class FactoryErrorCollector : public gpb::compiler::MultiFileErrorCollector {
+class FactoryErrorCollector : public gp::compiler::MultiFileErrorCollector {
 public:
     virtual void AddError(const std::string &file_name,
                             int line,
@@ -67,7 +66,7 @@ private:
     std::vector<std::string> _errors;
 };
 
-using MsgUPtr = std::unique_ptr<gpb::Message>;
+using MsgUPtr = std::unique_ptr<gp::Message>;
 
 class ProtoFactory {
 public:
@@ -83,7 +82,9 @@ public:
 
     MsgUPtr create(const std::string &type);
 
-    const gpb::Descriptor* descriptor(const std::string &type);
+    MsgUPtr create(const std::string &type, const StringView &sv);
+
+    const gp::Descriptor* descriptor(const std::string &type);
 
 private:
     void _load_protos(const std::string &proto_dir);
@@ -93,13 +94,13 @@ private:
     // Dir where .proto file are saved.
     std::string _proto_dir;
 
-    gpb::compiler::DiskSourceTree _source_tree;
+    gp::compiler::DiskSourceTree _source_tree;
 
     FactoryErrorCollector _error_collector;
 
-    gpb::compiler::Importer _importer;
+    gp::compiler::Importer _importer;
 
-    gpb::DynamicMessageFactory _factory;
+    gp::DynamicMessageFactory _factory;
 };
 
 }

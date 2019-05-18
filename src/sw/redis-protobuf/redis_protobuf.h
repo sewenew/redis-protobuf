@@ -19,6 +19,7 @@
 
 #include "module_api.h"
 #include "proto_factory.h"
+#include "options.h"
 
 namespace sw {
 
@@ -26,25 +27,65 @@ namespace redis {
 
 namespace pb {
 
-constexpr int MODULE_VERSION = 0;
+class RedisProtobuf {
+public:
+    static RedisProtobuf& instance();
 
-constexpr int ENCODING_VERSION = 0;
+    void load(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 
-constexpr const char *MODULE_NAME = "PB";
+    int module_version() const {
+        return _MODULE_VERSION;
+    }
 
-constexpr const char *TYPE_NAME = "PROTOC-SW";
+    int encoding_version() const {
+        return _ENCODING_VERSION;
+    }
 
-extern RedisModuleType *redis_proto;
+    const std::string& module_name() const {
+        return _MODULE_NAME;
+    }
 
-extern std::unique_ptr<ProtoFactory> proto_factory;
+    const std::string& type_name() const {
+        return _TYPE_NAME;
+    }
 
-void* rdb_load(RedisModuleIO *rdb, int encver);
+    RedisModuleType* type() {
+        return _module_type;
+    }
 
-void rdb_save(RedisModuleIO *rdb, void *value);
+    const Options& options() const {
+        return _options;
+    }
 
-void aof_rewrite(RedisModuleIO *aof, RedisModuleString *key, void *value);
+    ProtoFactory* proto_factory() {
+        return _proto_factory.get();
+    }
 
-void free_msg(void *value);
+private:
+    RedisProtobuf() = default;
+
+    static void* _rdb_load(RedisModuleIO *rdb, int encver);
+
+    static void _rdb_save(RedisModuleIO *rdb, void *value);
+
+    static void _aof_rewrite(RedisModuleIO *aof, RedisModuleString *key, void *value);
+
+    static void _free_msg(void *value);
+
+    const int _MODULE_VERSION = 0;
+
+    const int _ENCODING_VERSION = 0;
+
+    const std::string _MODULE_NAME = "PB";
+
+    const std::string _TYPE_NAME = "PROTOC-SW";
+
+    RedisModuleType *_module_type = nullptr;
+
+    std::unique_ptr<ProtoFactory> _proto_factory;
+
+    Options _options;
+};
 
 }
 
