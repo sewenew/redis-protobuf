@@ -18,7 +18,6 @@
 #define SEWENEW_REDISPROTOBUF_PROTO_FACTORY_H
 
 #include <string>
-#include <memory>
 #include <google/protobuf/message.h>
 #include <google/protobuf/compiler/importer.h>
 #include <google/protobuf/dynamic_message.h>
@@ -65,8 +64,6 @@ private:
 
     std::vector<std::string> _errors;
 };
-
-using MsgUPtr = std::unique_ptr<gp::Message>;
 
 class ProtoFactory {
 public:

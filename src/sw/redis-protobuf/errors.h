@@ -59,6 +59,19 @@ public:
     virtual ~WrongTypeError() = default;
 };
 
+class WrongArityError : public Error {
+public:
+    explicit WrongArityError() : Error("WrongArity") {}
+
+    WrongArityError(const WrongArityError &) = default;
+    WrongArityError& operator=(const WrongArityError &) = default;
+
+    WrongArityError(WrongArityError &&) = default;
+    WrongArityError& operator=(WrongArityError &&) = default;
+
+    virtual ~WrongArityError() = default;
+};
+
 }
 
 }

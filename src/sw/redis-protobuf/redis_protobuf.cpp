@@ -88,7 +88,7 @@ void RedisProtobuf::load(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
 
     _proto_factory = std::unique_ptr<ProtoFactory>(new ProtoFactory(options().proto_dir));
 
-    create_commands(ctx);
+    cmd::create_commands(ctx);
 }
 
 void* RedisProtobuf::_rdb_load(RedisModuleIO *rdb, int encver) {

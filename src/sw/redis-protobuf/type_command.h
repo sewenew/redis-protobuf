@@ -14,10 +14,13 @@
    limitations under the License.
  *************************************************************************/
 
-#ifndef SEWENEW_REDISPROTOBUF_COMMANDS_H
-#define SEWENEW_REDISPROTOBUF_COMMANDS_H
+#ifndef SEWENEW_REDISPROTOBUF_TYPE_COMMANDS_H
+#define SEWENEW_REDISPROTOBUF_TYPE_COMMANDS_H
 
 #include "module_api.h"
+#include <string>
+#include <vector>
+#include "utils.h"
 
 namespace sw {
 
@@ -25,9 +28,20 @@ namespace redis {
 
 namespace pb {
 
-namespace cmd {
+// command: PB.TYPE key
+// return:  Simple string reply: the protobuf type of the key.
+//          If key doesn't exist, return nil reply.
+class TypeCommand {
+public:
+    int run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;
 
-void create_commands(RedisModuleCtx *ctx);
+private:
+    struct Args {
+        RedisModuleString *key_name;
+    };
+
+    Args _parse_args(RedisModuleString **argv, int argc) const;
+};
 
 }
 
@@ -35,6 +49,4 @@ void create_commands(RedisModuleCtx *ctx);
 
 }
 
-}
-
-#endif // end SEWENEW_REDISPROTOBUF_COMMANDS_H
+#endif // end SEWENEW_REDISPROTOBUF_TYPE_COMMANDS_H

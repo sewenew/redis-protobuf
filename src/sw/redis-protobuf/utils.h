@@ -19,6 +19,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include <google/protobuf/message.h>
 #include "module_api.h"
 
@@ -29,6 +30,8 @@ namespace redis {
 namespace pb {
 
 namespace gp = google::protobuf;
+
+using MsgUPtr = std::unique_ptr<gp::Message>;
 
 // By now, not all compilers support std::string_view,
 // so we make our own implementation.
@@ -60,6 +63,12 @@ private:
     const char *_data = nullptr;
     std::size_t _size = 0;
 };
+
+namespace util {
+
+std::string msg_to_json(const gp::Message &msg);
+
+}
 
 namespace io {
 

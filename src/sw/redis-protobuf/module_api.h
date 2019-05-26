@@ -86,9 +86,7 @@ bool key_exists(RedisModuleKey *key, RedisModuleType *key_type);
 
 int reply_with_error(RedisModuleCtx *ctx, const Error &err);
 
-inline google::protobuf::Message* get_msg_by_key(RedisModuleKey *key) {
-    return static_cast<google::protobuf::Message *>(RedisModule_ModuleTypeGetValue(key));
-}
+google::protobuf::Message* get_msg_by_key(RedisModuleKey *key);
 
 }
 

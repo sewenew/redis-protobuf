@@ -71,6 +71,15 @@ int reply_with_error(RedisModuleCtx *ctx, const Error &err) {
     return RedisModule_ReplyWithError(ctx, msg.data());
 }
 
+google::protobuf::Message* get_msg_by_key(RedisModuleKey *key) {
+    auto *msg = static_cast<google::protobuf::Message *>(RedisModule_ModuleTypeGetValue(key));
+    if (msg == nullptr) {
+        throw Error("failed to get message by key");
+    }
+
+    return msg;
+}
+
 }
 
 }

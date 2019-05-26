@@ -15,15 +15,9 @@
  *************************************************************************/
 
 #include "commands.h"
-#include <cassert>
-#include "errors.h"
-#include "redis_protobuf.h"
-
-namespace {
-
-int ReplyWithError(RedisModuleCtx *ctx, const std::string &err);
-
-}
+#include "set_command.h"
+#include "get_command.h"
+#include "type_command.h"
 
 namespace sw {
 
@@ -33,68 +27,51 @@ namespace pb {
 
 namespace cmd {
 
-// PB.TYPE key [field]
-int type_command(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    try {
-        assert(ctx != nullptr);
-
-        auto &module = RedisProtobuf::instance();
-
-        if (argc != 2 && argc != 3) {
-            return RedisModule_WrongArity(ctx);
-        }
-
-        auto key = api::open_key(ctx, argv[1], api::KeyMode::READONLY);
-        if (!api::key_exists(key.get(), module.type())) {
-            return RedisModule_ReplyWithNull(ctx);
-        }
-
-        // get type info
-        return RedisModule_ReplyWithSimpleString(ctx, "type");
-    } catch (const Error &e) {
-        return ReplyWithError(ctx, e.what());
-    }
-}
-
-}
-
 void create_commands(RedisModuleCtx *ctx) {
     if (RedisModule_CreateCommand(ctx,
                 "PB.TYPE",
-                cmd::type_command,
+                [](RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+                    TypeCommand cmd;
+                    return cmd.run(ctx, argv, argc);
+                },
                 "readonly",
                 1,
                 1,
                 1) == REDISMODULE_ERR) {
         throw Error("failed to create type command");
     }
-    /*
+
     if (RedisModule_CreateCommand(ctx,
-                                    "PB.SET",
-                                    set_command,
-                                    "write deny-oom",
-                                    1,
-                                    1,
-                                    1) == REDISMODULE_ERR) {
-        throw rpb::Error("fail to create set command");
+                "PB.SET",
+                [](RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+                    SetCommand cmd;
+                    return cmd.run(ctx, argv, argc);
+                },
+                "write deny-oom",
+                1,
+                1,
+                1) == REDISMODULE_ERR) {
+        throw Error("fail to create set command");
     }
-    */
+
+    if (RedisModule_CreateCommand(ctx,
+                "PB.GET",
+                [](RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+                    GetCommand cmd;
+                    return cmd.run(ctx, argv, argc);
+                },
+                "readonly",
+                1,
+                1,
+                1) == REDISMODULE_ERR) {
+        throw Error("failed to create get command");
+    }
 }
 
 }
 
 }
 
-}
-
-namespace {
-
-int ReplyWithError(RedisModuleCtx *ctx, const std::string &err) {
-    assert(ctx != nullptr);
-
-    auto msg = "ERR " + err;
-
-    return RedisModule_ReplyWithError(ctx, msg.c_str());
 }
 
 }

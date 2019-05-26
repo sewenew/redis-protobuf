@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <cassert>
+#include <google/protobuf/util/json_util.h>
 #include "errors.h"
 
 namespace {
@@ -38,6 +39,20 @@ StringView::StringView(RedisModuleString *str) {
     }
 
     _data = RedisModule_StringPtrLen(str, &_size);
+}
+
+namespace util {
+
+std::string msg_to_json(const gp::Message &msg) {
+    std::string json;
+    auto status = gp::util::MessageToJsonString(msg, &json);
+    if (!status.ok()) {
+        throw Error("failed to parse message to json");
+    }
+
+    return json;
+}
+
 }
 
 namespace io {
