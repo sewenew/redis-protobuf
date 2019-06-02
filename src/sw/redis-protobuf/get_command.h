@@ -54,6 +54,8 @@ private:
             gp::Message &msg,
             const std::vector<Path> &paths) const;
 
+    void _get_scalar_field(RedisModuleCtx *ctx, const FieldRef &field) const;
+
     void _get_array_element(RedisModuleCtx *ctx, const FieldRef &field) const;
 
     void _get_msg(RedisModuleCtx *ctx, const gp::Message &msg) const;

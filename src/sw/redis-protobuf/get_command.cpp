@@ -74,74 +74,71 @@ void GetCommand::_get_msg(RedisModuleCtx *ctx, const gp::Message &msg) const {
 }
 
 void GetCommand::_get_field(RedisModuleCtx *ctx, const FieldRef &field) const {
-    gp::Message *sub_msg = field.msg;
-    const auto *field_desc = field.field_desc;
-
-    assert(sub_msg != nullptr && field_desc != nullptr);
-
-    const auto *reflection = sub_msg->GetReflection();
-
     if (field.is_array_element()) {
         return _get_array_element(ctx, field);
     } else if (field.is_array()) {
-        assert(false);
         // TODO: 
+        throw Error("cannot get array field");
     } else if (field.is_map()) {
-        assert(false);
         // TODO: add map support.
+        throw Error("cannot get map field");
     } // else non-aggregate type.
 
+    _get_scalar_field(ctx, field);
+}
+
+void GetCommand::_get_scalar_field(RedisModuleCtx *ctx, const FieldRef &field) const {
     switch (field.type()) {
     case gp::FieldDescriptor::CPPTYPE_INT32: {
-        auto val = reflection->GetInt32(*sub_msg, field_desc);
+        auto val = field.get_int32();
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_INT64: {
-        auto val = reflection->GetInt64(*sub_msg, field_desc);
+        auto val = field.get_int64();
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_UINT32: {
-        auto val = reflection->GetUInt32(*sub_msg, field_desc);
+        auto val = field.get_uint32();
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_UINT64: {
-        auto val = reflection->GetUInt64(*sub_msg, field_desc);
+        auto val = field.get_uint64();
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_DOUBLE: {
-        auto val = reflection->GetDouble(*sub_msg, field_desc);
+        auto val = field.get_double();
         auto str = std::to_string(val);
         RedisModule_ReplyWithSimpleString(ctx, str.data());
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_FLOAT: {
-        auto val = reflection->GetFloat(*sub_msg, field_desc);
+        auto val = field.get_float();
         auto str = std::to_string(val);
         RedisModule_ReplyWithSimpleString(ctx, str.data());
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_BOOL: {
-        auto val = reflection->GetBool(*sub_msg, field_desc);
+        auto val = field.get_bool();
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_STRING: {
-        auto val = reflection->GetString(*sub_msg, field_desc);
+        auto val = field.get_string();
         RedisModule_ReplyWithStringBuffer(ctx, val.data(), val.size());
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_MESSAGE: {
-        auto json = util::msg_to_json(*sub_msg);
+        auto json = util::msg_to_json(*field.msg());
         RedisModule_ReplyWithStringBuffer(ctx, json.data(), json.size());
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_ENUM: {
         // TODO: add enum support
-        assert(false);
+        throw Error("cannot get enum field");
         break;
     }
     default:
@@ -150,62 +147,58 @@ void GetCommand::_get_field(RedisModuleCtx *ctx, const FieldRef &field) const {
 }
 
 void GetCommand::_get_array_element(RedisModuleCtx *ctx, const FieldRef &field) const {
-    const auto *reflection = field.msg->GetReflection();
-    const auto &msg = *field.msg;
-    const auto *field_desc = field.field_desc;
-    auto arr_idx = field.arr_idx;
     switch (field.type()) {
     case gp::FieldDescriptor::CPPTYPE_INT32: {
-        auto val = reflection->GetRepeatedInt32(msg, field_desc, arr_idx);
+        auto val = field.get_repeated_int32();
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_INT64: {
-        auto val = reflection->GetRepeatedInt64(msg, field_desc, arr_idx);
+        auto val = field.get_repeated_int64();
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_UINT32: {
-        auto val = reflection->GetRepeatedUInt32(msg, field_desc, arr_idx);
+        auto val = field.get_repeated_uint32();
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_UINT64: {
-        auto val = reflection->GetRepeatedUInt64(msg, field_desc, arr_idx);
+        auto val = field.get_repeated_uint64();
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_DOUBLE: {
-        auto val = reflection->GetRepeatedDouble(msg, field_desc, arr_idx);
+        auto val = field.get_repeated_double();
         auto str = std::to_string(val);
         RedisModule_ReplyWithSimpleString(ctx, str.data());
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_FLOAT: {
-        auto val = reflection->GetRepeatedFloat(msg, field_desc, arr_idx);
+        auto val = field.get_repeated_float();
         auto str = std::to_string(val);
         RedisModule_ReplyWithSimpleString(ctx, str.data());
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_BOOL: {
-        auto val = reflection->GetRepeatedBool(msg, field_desc, arr_idx);
+        auto val = field.get_repeated_bool();
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_STRING: {
-        const auto &val = reflection->GetRepeatedString(msg, field_desc, arr_idx);
+        const auto &val = field.get_repeated_string();
         RedisModule_ReplyWithStringBuffer(ctx, val.data(), val.size());
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_MESSAGE: {
-        const auto &sub_msg = reflection->GetRepeatedMessage(msg, field_desc, arr_idx);
-        auto json = util::msg_to_json(sub_msg);
+        const auto &msg = field.get_repeated_msg();
+        auto json = util::msg_to_json(msg);
         RedisModule_ReplyWithStringBuffer(ctx, json.data(), json.size());
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_ENUM: {
         // TODO: add enum support
-        assert(false);
+        throw Error("cannot get enum field");
         break;
     }
     default:

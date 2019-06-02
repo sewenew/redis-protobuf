@@ -65,35 +65,82 @@ private:
     std::vector<std::string> _fields;
 };
 
-struct FieldRef {
+class FieldRef {
 public:
     FieldRef(gp::Message *root_msg, const Path &path);
 
     gp::FieldDescriptor::CppType type() const;
 
+    const gp::Message* msg() const {
+        return _msg;
+    }
+
+    gp::Message* msg() {
+        return _msg;
+    }
+
     bool is_array() const {
-        return field_desc->is_repeated();
+        return _field_desc->is_repeated();
     }
 
     bool is_array_element() const {
-        return arr_idx >= 0;
+        return _arr_idx >= 0;
     }
 
     bool is_map() const {
-        return field_desc->is_map();
+        return _field_desc->is_map();
     }
 
     explicit operator bool() const {
-        return field_desc != nullptr;
+        return _field_desc != nullptr;
     }
 
-    gp::Message *msg = nullptr;
+    void set_int32(int32_t val);
+    void set_int64(int64_t val);
+    void set_uint32(uint32_t val);
+    void set_uint64(uint64_t val);
+    void set_float(float val);
+    void set_double(double val);
+    void set_bool(bool val);
+    void set_string(const std::string &val);
+    void set_msg(gp::Message &msg);
 
-    const gp::FieldDescriptor *field_desc = nullptr;
+    int32_t get_int32() const;
+    int64_t get_int64() const;
+    uint32_t get_uint32() const;
+    uint64_t get_uint64() const;
+    float get_float() const;
+    double get_double() const;
+    bool get_bool() const;
+    std::string get_string() const;
 
-    int arr_idx = -1;
+    void set_repeated_int32(int32_t val);
+    void set_repeated_int64(int64_t val);
+    void set_repeated_uint32(uint32_t val);
+    void set_repeated_uint64(uint64_t val);
+    void set_repeated_float(float val);
+    void set_repeated_double(double val);
+    void set_repeated_bool(bool val);
+    void set_repeated_string(const std::string &val);
+    void set_repeated_msg(gp::Message &msg);
+
+    int32_t get_repeated_int32() const;
+    int64_t get_repeated_int64() const;
+    uint32_t get_repeated_uint32() const;
+    uint64_t get_repeated_uint64() const;
+    float get_repeated_float() const;
+    double get_repeated_double() const;
+    bool get_repeated_bool() const;
+    std::string get_repeated_string() const;
+    const gp::Message& get_repeated_msg() const;
 
 private:
+    gp::Message *_msg = nullptr;
+
+    const gp::FieldDescriptor *_field_desc = nullptr;
+
+    int _arr_idx = -1;
+
     enum class ParentType {
         MSG,
         ARR,

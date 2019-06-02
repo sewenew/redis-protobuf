@@ -84,14 +84,14 @@ std::vector<std::string> Path::_parse_fields(const char *ptr, std::size_t len) {
 FieldRef::FieldRef(gp::Message *root_msg, const Path &path) {
     _validate_parameters(root_msg, path);
 
-    msg = root_msg;
+    _msg = root_msg;
 
     auto parent_type = ParentType::MSG;
 
     for (const auto &field : path.fields()) {
-        assert(!field.empty() && msg != nullptr);
+        assert(!field.empty() && _msg != nullptr);
 
-        const auto *reflection = msg->GetReflection();
+        const auto *reflection = _msg->GetReflection();
 
         if (field.back() == ']') {
             // It's an array or a map.
@@ -108,11 +108,153 @@ FieldRef::FieldRef(gp::Message *root_msg, const Path &path) {
 }
 
 gp::FieldDescriptor::CppType FieldRef::type() const {
-    if (field_desc == nullptr) {
+    if (_field_desc == nullptr) {
         throw Error("no field specified");
     }
 
-    return field_desc->cpp_type();
+    return _field_desc->cpp_type();
+}
+
+void FieldRef::set_int32(int32_t val) {
+    _msg->GetReflection()->SetInt32(_msg, _field_desc, val);
+}
+
+void FieldRef::set_int64(int64_t val) {
+    _msg->GetReflection()->SetInt64(_msg, _field_desc, val);
+}
+
+void FieldRef::set_uint32(uint32_t val) {
+    _msg->GetReflection()->SetUInt32(_msg, _field_desc, val);
+}
+
+void FieldRef::set_uint64(uint64_t val) {
+    _msg->GetReflection()->SetUInt64(_msg, _field_desc, val);
+}
+
+void FieldRef::set_float(float val) {
+    _msg->GetReflection()->SetFloat(_msg, _field_desc, val);
+}
+
+void FieldRef::set_double(double val) {
+    _msg->GetReflection()->SetDouble(_msg, _field_desc, val);
+}
+
+void FieldRef::set_bool(bool val) {
+    _msg->GetReflection()->SetBool(_msg, _field_desc, val);
+}
+
+void FieldRef::set_string(const std::string &val) {
+    _msg->GetReflection()->SetString(_msg, _field_desc, val);
+}
+
+void FieldRef::set_msg(gp::Message &msg) {
+    _msg->GetReflection()->Swap(_msg, &msg);
+}
+
+int32_t FieldRef::get_int32() const {
+    return _msg->GetReflection()->GetInt32(*_msg, _field_desc);
+}
+
+int64_t FieldRef::get_int64() const {
+    return _msg->GetReflection()->GetInt64(*_msg, _field_desc);
+}
+
+uint32_t FieldRef::get_uint32() const {
+    return _msg->GetReflection()->GetUInt32(*_msg, _field_desc);
+}
+
+uint64_t FieldRef::get_uint64() const {
+    return _msg->GetReflection()->GetUInt64(*_msg, _field_desc);
+}
+
+float FieldRef::get_float() const {
+    return _msg->GetReflection()->GetFloat(*_msg, _field_desc);
+}
+
+double FieldRef::get_double() const {
+    return _msg->GetReflection()->GetDouble(*_msg, _field_desc);
+}
+
+bool FieldRef::get_bool() const {
+    return _msg->GetReflection()->GetBool(*_msg, _field_desc);
+}
+
+std::string FieldRef::get_string() const {
+    return _msg->GetReflection()->GetString(*_msg, _field_desc);
+}
+
+void FieldRef::set_repeated_int32(int32_t val) {
+    _msg->GetReflection()->SetRepeatedInt32(_msg, _field_desc, _arr_idx, val);
+}
+
+void FieldRef::set_repeated_int64(int64_t val) {
+    _msg->GetReflection()->SetRepeatedInt64(_msg, _field_desc, _arr_idx, val);
+}
+
+void FieldRef::set_repeated_uint32(uint32_t val) {
+    _msg->GetReflection()->SetRepeatedUInt32(_msg, _field_desc, _arr_idx, val);
+}
+
+void FieldRef::set_repeated_uint64(uint64_t val) {
+    _msg->GetReflection()->SetRepeatedUInt64(_msg, _field_desc, _arr_idx, val);
+}
+
+void FieldRef::set_repeated_float(float val) {
+    _msg->GetReflection()->SetRepeatedFloat(_msg, _field_desc, _arr_idx, val);
+}
+
+void FieldRef::set_repeated_double(double val) {
+    _msg->GetReflection()->SetRepeatedDouble(_msg, _field_desc, _arr_idx, val);
+}
+
+void FieldRef::set_repeated_bool(bool val) {
+    _msg->GetReflection()->SetRepeatedBool(_msg, _field_desc, _arr_idx, val);
+}
+
+void FieldRef::set_repeated_string(const std::string &val) {
+    _msg->GetReflection()->SetRepeatedString(_msg, _field_desc, _arr_idx, val);
+}
+
+void FieldRef::set_repeated_msg(gp::Message &msg) {
+    const auto *reflection = _msg->GetReflection();
+    auto *sub_msg = reflection->MutableRepeatedMessage(_msg, _field_desc, _arr_idx);
+    reflection->Swap(sub_msg, &msg);
+}
+
+int32_t FieldRef::get_repeated_int32() const {
+    return _msg->GetReflection()->GetRepeatedInt32(*_msg, _field_desc, _arr_idx);
+}
+
+int64_t FieldRef::get_repeated_int64() const {
+    return _msg->GetReflection()->GetRepeatedInt64(*_msg, _field_desc, _arr_idx);
+}
+
+uint32_t FieldRef::get_repeated_uint32() const {
+    return _msg->GetReflection()->GetRepeatedUInt32(*_msg, _field_desc, _arr_idx);
+}
+
+uint64_t FieldRef::get_repeated_uint64() const {
+    return _msg->GetReflection()->GetRepeatedUInt64(*_msg, _field_desc, _arr_idx);
+}
+
+float FieldRef::get_repeated_float() const {
+    return _msg->GetReflection()->GetRepeatedFloat(*_msg, _field_desc, _arr_idx);
+}
+
+double FieldRef::get_repeated_double() const {
+    return _msg->GetReflection()->GetRepeatedDouble(*_msg, _field_desc, _arr_idx);
+}
+
+bool FieldRef::get_repeated_bool() const {
+    return _msg->GetReflection()->GetRepeatedBool(*_msg, _field_desc, _arr_idx);
+}
+
+std::string FieldRef::get_repeated_string() const {
+    return _msg->GetReflection()->GetRepeatedString(*_msg, _field_desc, _arr_idx);
+}
+
+const gp::Message& FieldRef::get_repeated_msg() const {
+    return _msg->GetReflection()->GetRepeatedMessage(*_msg, _field_desc, _arr_idx);
 }
 
 void FieldRef::_validate_parameters(gp::Message *root_msg, const Path &path) const {
@@ -135,14 +277,14 @@ FieldRef::ParentType FieldRef::_aggregate_field(const std::string &field,
     auto name = field.substr(0, pos);
     auto key = field.substr(pos + 1, field.size() - pos - 2);
 
-    field_desc = msg->GetDescriptor()->FindFieldByName(name);
-    if (field_desc == nullptr) {
+    _field_desc = _msg->GetDescriptor()->FindFieldByName(name);
+    if (_field_desc == nullptr) {
         throw Error("field not found: " + name);
     }
 
-    if (field_desc->is_repeated()) {
+    if (_field_desc->is_repeated()) {
         return _arr_field(key, reflection);
-    } else if (field_desc->is_map()) {
+    } else if (_field_desc->is_map()) {
         // TODO: support map
         assert(false);
     } else {
@@ -152,19 +294,19 @@ FieldRef::ParentType FieldRef::_aggregate_field(const std::string &field,
 
 FieldRef::ParentType FieldRef::_msg_field(const std::string &field,
         const gp::Reflection *reflection) {
-    field_desc = msg->GetDescriptor()->FindFieldByName(field);
-    if (field_desc == nullptr) {
+    _field_desc = _msg->GetDescriptor()->FindFieldByName(field);
+    if (_field_desc == nullptr) {
         throw Error("field not found: " + field);
     }
 
-    if (field_desc->is_repeated()) {
+    if (_field_desc->is_repeated()) {
         return ParentType::ARR;
-    } else if (field_desc->is_map()) {
+    } else if (_field_desc->is_map()) {
         // TODO: how to do reflection with map?
         assert(false);
         return ParentType::MAP;
     } else if (type() == gp::FieldDescriptor::CPPTYPE_MESSAGE) {
-        msg = reflection->MutableMessage(msg, field_desc);
+        _msg = reflection->MutableMessage(_msg, _field_desc);
         return ParentType::MSG;
     } else {
         return ParentType::SCALAR;
@@ -173,17 +315,17 @@ FieldRef::ParentType FieldRef::_msg_field(const std::string &field,
 
 FieldRef::ParentType FieldRef::_arr_field(const std::string &field,
         const gp::Reflection *reflection) {
-    assert(field_desc != nullptr && msg != nullptr);
+    assert(_field_desc != nullptr && _msg != nullptr);
 
-    arr_idx = -1;
+    _arr_idx = -1;
     try {
-        arr_idx = std::stoi(field);
+        _arr_idx = std::stoi(field);
     } catch (const std::exception &e) {
         throw Error("invalid array index: " + field);
     }
 
-    auto size = reflection->FieldSize(*msg, field_desc);
-    if (arr_idx >= size) {
+    auto size = reflection->FieldSize(*_msg, _field_desc);
+    if (_arr_idx >= size) {
         throw Error("array index is out-of-range: " + field + " : " + std::to_string(size));
     }
 
@@ -199,7 +341,7 @@ FieldRef::ParentType FieldRef::_arr_field(const std::string &field,
         return ParentType::SCALAR;
 
     case gp::FieldDescriptor::CPPTYPE_MESSAGE:
-        msg = reflection->MutableRepeatedMessage(msg, field_desc, arr_idx);
+        _msg = reflection->MutableRepeatedMessage(_msg, _field_desc, _arr_idx);
         return ParentType::MSG;
 
     case gp::FieldDescriptor::CPPTYPE_ENUM:
