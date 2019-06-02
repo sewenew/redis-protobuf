@@ -31,16 +31,15 @@ int GetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
         assert(ctx != nullptr);
 
         auto args = _parse_args(argv, argc);
-        const auto &paths = args.paths;
 
         auto key = api::open_key(ctx, args.key_name, api::KeyMode::READONLY);
         if (!api::key_exists(key.get(), RedisProtobuf::instance().type())) {
-            _reply_with_nil(ctx, paths);
+            _reply_with_nil(ctx);
         } else {
             auto *msg = api::get_msg_by_key(key.get());
             assert(msg != nullptr);
 
-            _reply_with_msg(ctx, *msg, paths);
+            _reply_with_msg(ctx, *msg, args.paths);
         }
 
         return REDISMODULE_OK;
@@ -54,26 +53,16 @@ int GetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
 GetCommand::Args GetCommand::_parse_args(RedisModuleString **argv, int argc) const {
     assert(argv != nullptr);
 
-    if (argc < 2) {
+    if (argc != 2 && argc != 3) {
         throw WrongArityError();
     }
 
     Args args;
     args.key_name = argv[1];
-    args.paths.reserve(argc - 2);
 
-    std::string type;
-    for (auto idx = 2; idx != argc; ++idx) {
-        Path path(argv[idx]);
-        if (type.empty()) {
-            type = path.type();
-        } else {
-            if (type != path.type()) {
-                throw Error("fields have different types");
-            }
-        }
-
-        args.paths.push_back(std::move(path));
+    // Get field.
+    if (argc == 3) {
+        args.paths.emplace_back(argv[2]);
     }
 
     return args;
@@ -86,12 +75,23 @@ void GetCommand::_get_msg(RedisModuleCtx *ctx, const gp::Message &msg) const {
 
 void GetCommand::_get_field(RedisModuleCtx *ctx, const FieldRef &field) const {
     gp::Message *sub_msg = field.msg;
-    const gp::FieldDescriptor *field_desc = field.field_desc;
+    const auto *field_desc = field.field_desc;
 
     assert(sub_msg != nullptr && field_desc != nullptr);
 
     const auto *reflection = sub_msg->GetReflection();
-    switch (field_desc->cpp_type()) {
+
+    if (field.is_array_element()) {
+        return _get_array_element(ctx, field);
+    } else if (field.is_array()) {
+        assert(false);
+        // TODO: 
+    } else if (field.is_map()) {
+        assert(false);
+        // TODO: add map support.
+    } // else non-aggregate type.
+
+    switch (field.type()) {
     case gp::FieldDescriptor::CPPTYPE_INT32: {
         auto val = reflection->GetInt32(*sub_msg, field_desc);
         RedisModule_ReplyWithLongLong(ctx, val);
@@ -149,50 +149,93 @@ void GetCommand::_get_field(RedisModuleCtx *ctx, const FieldRef &field) const {
     }
 }
 
-void GetCommand::_reply_with_nil(RedisModuleCtx *ctx, const std::vector<Path> &paths) const {
-    std::size_t result_size = paths.empty() ? 1 : paths.size();
-
-    if (result_size == 1) {
-        RedisModule_ReplyWithNull(ctx);
-    } else {
-        RedisModule_ReplyWithArray(ctx, result_size);
-        for (std::size_t idx = 0; idx != result_size; ++idx) {
-            RedisModule_ReplyWithNull(ctx);
-        }
+void GetCommand::_get_array_element(RedisModuleCtx *ctx, const FieldRef &field) const {
+    const auto *reflection = field.msg->GetReflection();
+    const auto &msg = *field.msg;
+    const auto *field_desc = field.field_desc;
+    auto arr_idx = field.arr_idx;
+    switch (field.type()) {
+    case gp::FieldDescriptor::CPPTYPE_INT32: {
+        auto val = reflection->GetRepeatedInt32(msg, field_desc, arr_idx);
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
     }
+    case gp::FieldDescriptor::CPPTYPE_INT64: {
+        auto val = reflection->GetRepeatedInt64(msg, field_desc, arr_idx);
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_UINT32: {
+        auto val = reflection->GetRepeatedUInt32(msg, field_desc, arr_idx);
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_UINT64: {
+        auto val = reflection->GetRepeatedUInt64(msg, field_desc, arr_idx);
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_DOUBLE: {
+        auto val = reflection->GetRepeatedDouble(msg, field_desc, arr_idx);
+        auto str = std::to_string(val);
+        RedisModule_ReplyWithSimpleString(ctx, str.data());
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_FLOAT: {
+        auto val = reflection->GetRepeatedFloat(msg, field_desc, arr_idx);
+        auto str = std::to_string(val);
+        RedisModule_ReplyWithSimpleString(ctx, str.data());
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_BOOL: {
+        auto val = reflection->GetRepeatedBool(msg, field_desc, arr_idx);
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_STRING: {
+        const auto &val = reflection->GetRepeatedString(msg, field_desc, arr_idx);
+        RedisModule_ReplyWithStringBuffer(ctx, val.data(), val.size());
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_MESSAGE: {
+        const auto &sub_msg = reflection->GetRepeatedMessage(msg, field_desc, arr_idx);
+        auto json = util::msg_to_json(sub_msg);
+        RedisModule_ReplyWithStringBuffer(ctx, json.data(), json.size());
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_ENUM: {
+        // TODO: add enum support
+        assert(false);
+        break;
+    }
+    default:
+        assert(false);
+    }
+}
+
+void GetCommand::_reply_with_nil(RedisModuleCtx *ctx) const {
+    RedisModule_ReplyWithNull(ctx);
 }
 
 void GetCommand::_reply_with_msg(RedisModuleCtx *ctx,
         gp::Message &msg,
         const std::vector<Path> &paths) const {
     if (paths.empty()) {
-        auto json = util::msg_to_json(msg);
-        RedisModule_ReplyWithStringBuffer(ctx, json.data(), json.size());
-
-        return;
+        // Get the whole message.
+        return _get_msg(ctx, msg);
     }
 
-    if (msg.GetTypeName() != paths[0].type()) {
+    // Get field.
+    const auto &path = paths.front();
+    if (msg.GetTypeName() != path.type()) {
         throw Error("type missmatch");
     }
 
-    std::vector<FieldRef> fields;
-    fields.reserve(paths.size());
-    for (const auto &path : paths) {
-        fields.emplace_back(&msg, path);
+    if (path.empty()) {
+        return _get_msg(ctx, msg);
     }
 
-    if (paths.size() > 1) {
-        RedisModule_ReplyWithArray(ctx, paths.size());
-    }
-
-    for (const auto &field : fields) {
-        if (!field) {
-            _get_msg(ctx, msg);
-        } else {
-            _get_field(ctx, field);
-        }
-    }
+    _get_field(ctx, FieldRef(&msg, path));
 }
 
 }

@@ -29,7 +29,7 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.SET key path value [path value ...]
+// command: PB.SET key type|path value
 // return:  Integer reply: 1 if set successfully. 0, otherwise.
 class SetCommand {
 public:
@@ -38,18 +38,23 @@ public:
 private:
     struct Args {
         RedisModuleString *key_name;
-        std::vector<std::pair<Path, StringView>> paths;
+        Path path;
+        StringView val;
     };
 
     Args _parse_args(RedisModuleString **argv, int argc) const;
 
-    MsgUPtr _build_msg(const std::vector<std::pair<Path, StringView>> &paths) const;
+    void _create_msg(RedisModuleKey &key,
+            const Path &path,
+            const StringView &val) const;
 
-    void _set_msg(RedisModuleCtx *ctx, RedisModuleString *key_name, MsgUPtr msg) const;
+    void _set_msg(RedisModuleKey &key,
+            const Path &path,
+            const StringView &val) const;
 
-    void _set_msg(gp::Message *msg, const std::string &type, const StringView &val) const;
+    void _set_scalar_field(FieldRef &field, const StringView &val) const;
 
-    void _set_field(gp::Message *msg, const Path &path, const StringView &val) const;
+    void _set_array_element(FieldRef &field, const StringView &val) const;
 
     void _set_field(FieldRef &field, const StringView &sv) const;
 
@@ -70,6 +75,24 @@ private:
     void _set_string(FieldRef &field, const StringView &sv) const;
 
     void _set_msg(FieldRef &field, const StringView &sv) const;
+
+    void _set_repeated_int32(FieldRef &field, const StringView &sv) const;
+
+    void _set_repeated_int64(FieldRef &field, const StringView &sv) const;
+
+    void _set_repeated_uint32(FieldRef &field, const StringView &sv) const;
+
+    void _set_repeated_uint64(FieldRef &field, const StringView &sv) const;
+
+    void _set_repeated_double(FieldRef &field, const StringView &sv) const;
+
+    void _set_repeated_float(FieldRef &field, const StringView &sv) const;
+
+    void _set_repeated_bool(FieldRef &field, const StringView &sv) const;
+
+    void _set_repeated_string(FieldRef &field, const StringView &sv) const;
+
+    void _set_repeated_msg(FieldRef &field, const StringView &sv) const;
 };
 
 }

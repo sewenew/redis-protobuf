@@ -80,11 +80,11 @@ MsgUPtr ProtoFactory::create(const std::string &type, const StringView &sv) {
     if (len >= 2 && ptr[0] == '{' && ptr[len - 1] == '}') {
         auto status = gp::util::JsonStringToMessage(gp::StringPiece(ptr, len), msg.get());
         if (!status.ok()) {
-            throw Error("failed to parse json to protobuf of type: " + type);
+            throw Error("failed to parse json to " + type + ": " + status.ToString());
         }
     } else {
         if (!msg->ParseFromArray(ptr, len)) {
-            throw Error("failed to parse binary to protobuf of type: " + type);
+            throw Error("failed to parse binary to " + type);
         }
     }
 

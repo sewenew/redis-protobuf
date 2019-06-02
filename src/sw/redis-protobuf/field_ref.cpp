@@ -47,8 +47,8 @@ std::string Path::_parse_type(const char *ptr, std::size_t len) {
 
     std::size_t idx = 0;
     for (; idx != len; ++idx) {
-        // e.g. type[field1][field2]
-        if (ptr[idx] == '[') {
+        // e.g. type.field1.field2
+        if (ptr[idx] == '.') {
             break;
         }
     }
@@ -57,70 +57,52 @@ std::string Path::_parse_type(const char *ptr, std::size_t len) {
 }
 
 std::vector<std::string> Path::_parse_fields(const char *ptr, std::size_t len) {
-    assert(ptr != nullptr && len > 0 && *ptr == '[');
+    assert(ptr != nullptr && len > 0 && ptr[0] == '.');
 
     std::vector<std::string> fields;
-    std::size_t start = len;
-    std::size_t stop = 0;
-    for (std::size_t idx = 0; idx != len; ++idx) {
-        if (ptr[idx] == '[') {
-            start = idx;
-        } else if (ptr[idx] == ']') {
-            stop = idx;
-            if (stop <= start) {
-                throw Error("invalid field: " + std::string(ptr, len));
+    std::size_t start = 1;
+    for (std::size_t idx = 1; idx != len; ++idx) {
+        if (ptr[idx] == '.') {
+            if (idx <= start) {
+                throw Error("empty field");
             }
 
-            if (stop == start + 1) {
-                throw Error("empty field: " + std::string(ptr, len));
-            }
-
-            fields.emplace_back(ptr + start + 1, stop - start - 1);
-
-            start = len;
+            fields.emplace_back(ptr + start, idx - start);
+            start = idx + 1;
         }
     }
 
-    if (stop != len - 1) {
-        throw Error("invalid field: " + std::string(ptr, len));
+    if (len <= start) {
+        throw Error("empty field");
     }
+
+    fields.emplace_back(ptr + start, len - start);
 
     return fields;
 }
 
-FieldRef::FieldRef(gp::Message *parent_msg, const Path &path) {
-    _validate_parameters(parent_msg, path);
+FieldRef::FieldRef(gp::Message *root_msg, const Path &path) {
+    _validate_parameters(root_msg, path);
 
-    msg = parent_msg;
+    msg = root_msg;
 
     auto parent_type = ParentType::MSG;
 
     for (const auto &field : path.fields()) {
-        assert(msg != nullptr);
+        assert(!field.empty() && msg != nullptr);
+
         const auto *reflection = msg->GetReflection();
 
-        switch (parent_type) {
-        case ParentType::MSG:
+        if (field.back() == ']') {
+            // It's an array or a map.
+            parent_type = _aggregate_field(field, reflection);
+            continue;
+        }
+
+        if (parent_type == ParentType::MSG) {
             parent_type = _msg_field(field, reflection);
-            break;
-
-        case ParentType::ARR:
-            parent_type = _arr_field(field, reflection);
-            break;
-
-        case ParentType::MAP: {
-            // TODO: support map
-            assert(false);
-            break;
-        }
-        case ParentType::SCALAR: {
-            // All fields except the last one, must be a message, array or map.
-            throw Error("not a message, array or map");
-            break;
-        }
-        default:
-            assert(false);
-            break;
+        } else {
+            throw Error("invalid path");
         }
     }
 }
@@ -133,11 +115,38 @@ gp::FieldDescriptor::CppType FieldRef::type() const {
     return field_desc->cpp_type();
 }
 
-void FieldRef::_validate_parameters(gp::Message *parent_msg, const Path &path) const {
-    assert(parent_msg != nullptr);
+void FieldRef::_validate_parameters(gp::Message *root_msg, const Path &path) const {
+    assert(root_msg != nullptr);
 
-    if (parent_msg->GetTypeName() != path.type()) {
+    if (root_msg->GetTypeName() != path.type()) {
         throw Error("type missmatch");
+    }
+}
+
+FieldRef::ParentType FieldRef::_aggregate_field(const std::string &field,
+        const gp::Reflection *reflection) {
+    assert(!field.empty() && field.back() == ']');
+
+    auto pos = field.find('[');
+    if (pos == std::string::npos) {
+        throw Error("invalid array or map");
+    }
+
+    auto name = field.substr(0, pos);
+    auto key = field.substr(pos + 1, field.size() - pos - 2);
+
+    field_desc = msg->GetDescriptor()->FindFieldByName(name);
+    if (field_desc == nullptr) {
+        throw Error("field not found: " + name);
+    }
+
+    if (field_desc->is_repeated()) {
+        return _arr_field(key, reflection);
+    } else if (field_desc->is_map()) {
+        // TODO: support map
+        assert(false);
+    } else {
+        throw Error("invalid array or map");
     }
 }
 
@@ -148,15 +157,15 @@ FieldRef::ParentType FieldRef::_msg_field(const std::string &field,
         throw Error("field not found: " + field);
     }
 
-    if (type() == gp::FieldDescriptor::CPPTYPE_MESSAGE) {
-        msg = reflection->MutableMessage(msg, field_desc);
-        return ParentType::MSG;
-    } else if (field_desc->is_repeated()) {
+    if (field_desc->is_repeated()) {
         return ParentType::ARR;
     } else if (field_desc->is_map()) {
         // TODO: how to do reflection with map?
         assert(false);
         return ParentType::MAP;
+    } else if (type() == gp::FieldDescriptor::CPPTYPE_MESSAGE) {
+        msg = reflection->MutableMessage(msg, field_desc);
+        return ParentType::MSG;
     } else {
         return ParentType::SCALAR;
     }
@@ -166,7 +175,7 @@ FieldRef::ParentType FieldRef::_arr_field(const std::string &field,
         const gp::Reflection *reflection) {
     assert(field_desc != nullptr && msg != nullptr);
 
-    arr_idx = 0;
+    arr_idx = -1;
     try {
         arr_idx = std::stoi(field);
     } catch (const std::exception &e) {
@@ -175,7 +184,7 @@ FieldRef::ParentType FieldRef::_arr_field(const std::string &field,
 
     auto size = reflection->FieldSize(*msg, field_desc);
     if (arr_idx >= size) {
-        throw Error("array index is out-of-range: " + field);
+        throw Error("array index is out-of-range: " + field + " : " + std::to_string(size));
     }
 
     switch (type()) {

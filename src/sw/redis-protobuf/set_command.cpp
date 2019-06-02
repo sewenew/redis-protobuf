@@ -35,11 +35,16 @@ int SetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
         // TODO: if the ByteSize is too large, serialization might fail.
 
         auto args = _parse_args(argv, argc);
+        const auto &path = args.path;
 
-        auto msg = _build_msg(args.paths);
-        assert(msg);
+        auto key = api::open_key(ctx, args.key_name, api::KeyMode::WRITEONLY);
+        assert(key);
 
-        _set_msg(ctx, args.key_name, std::move(msg));
+        if (!api::key_exists(key.get(), RedisProtobuf::instance().type())) {
+            _create_msg(*key, path, args.val);
+        } else {
+            _set_msg(*key, path, args.val);
+        }
 
         return RedisModule_ReplyWithLongLong(ctx, 1);
     } catch (const WrongArityError &err) {
@@ -47,120 +52,77 @@ int SetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
     } catch (const Error &err) {
         return api::reply_with_error(ctx, err);
     }
+
+    return REDISMODULE_ERR;
 }
 
 SetCommand::Args SetCommand::_parse_args(RedisModuleString **argv, int argc) const {
     assert(argv != nullptr);
 
-    if (argc < 4 || argc % 2 != 0) {
+    if (argc != 4) {
         throw WrongArityError();
     }
 
-    Args args;
-    args.key_name = argv[1];
-    args.paths.reserve((argc - 2) / 2);
-
-    std::string type;
-    for (auto idx = 2; idx != argc; idx += 2) {
-        Path path(argv[idx]);
-        if (type.empty()) {
-            type = path.type();
-        } else {
-            if (type != path.type()) {
-                throw Error("fields have different types");
-            }
-        }
-
-        args.paths.emplace_back(std::move(path), StringView(argv[idx + 1]));
-    }
-
-    return args;
+    return {argv[1], Path(argv[2]), StringView(argv[3])};
 }
 
-MsgUPtr SetCommand::_build_msg(const std::vector<std::pair<Path, StringView>> &paths) const {
-    assert(paths.size() > 0);
-
-    const auto &first_path = paths[0].first;
-    const auto &type = first_path.type();
-
-    auto &module = RedisProtobuf::instance();
-
+void SetCommand::_create_msg(RedisModuleKey &key,
+        const Path &path,
+        const StringView &val) const {
     MsgUPtr msg;
-    std::size_t idx = 0;
-    if (first_path.empty()) {
-        // Create a message with the given data.
-        msg = module.proto_factory()->create(type, paths[0].second);
-        idx = 1;
+    auto &module = RedisProtobuf::instance();
+    if (path.empty()) {
+        msg = module.proto_factory()->create(path.type(), val);
     } else {
-        // Create an empty message.
-        msg = module.proto_factory()->create(type);
+        msg = module.proto_factory()->create(path.type());
+        FieldRef field(msg.get(), path);
+        _set_field(field, val);
     }
 
-    assert(msg);
-
-    for (; idx != paths.size(); ++idx) {
-        const auto &path = paths[idx].first;
-        const auto &val = paths[idx].second;
-        if (path.empty()) {
-            _set_msg(msg.get(), type, val);
-        } else {
-            _set_field(msg.get(), path, val);
-        }
+    if (RedisModule_ModuleTypeSetValue(&key, module.type(), msg.get()) != REDISMODULE_OK) {
+        throw Error("failed to set message");
     }
 
-    return msg;
+    msg.release();
 }
 
-void SetCommand::_set_msg(RedisModuleCtx *ctx, RedisModuleString *key_name, MsgUPtr msg) const {
-    assert(ctx != nullptr && key_name != nullptr && msg);
-
-    auto &module = RedisProtobuf::instance();
-
-    auto key = api::open_key(ctx, key_name, api::KeyMode::READWRITE);
-    if (!api::key_exists(key.get(), module.type())) {
-        if (RedisModule_ModuleTypeSetValue(key.get(), module.type(), msg.get()) != REDISMODULE_OK) {
-            throw Error("failed to create message");
+void SetCommand::_set_msg(RedisModuleKey &key,
+        const Path &path,
+        const StringView &val) const {
+    if (path.empty()) {
+        // Set the whole message.
+        auto &module = RedisProtobuf::instance();
+        auto msg = module.proto_factory()->create(path.type(), val);
+        if (RedisModule_ModuleTypeSetValue(&key, module.type(), msg.get()) != REDISMODULE_OK) {
+            throw Error("failed to set message");
         }
 
         msg.release();
     } else {
-        auto cur_msg = api::get_msg_by_key(key.get());
-        assert(cur_msg != nullptr);
+        // Set field.
+        auto *msg = api::get_msg_by_key(&key);
+        assert(msg != nullptr);
 
-        cur_msg->MergeFrom(*msg);
+        FieldRef field(msg, path);
+        _set_field(field, val);
     }
 }
 
-void SetCommand::_set_msg(gp::Message *msg,
-        const std::string &type,
-        const StringView &val) const {
-    assert(msg != nullptr);
-
-    auto &module = RedisProtobuf::instance();
-    auto new_msg = module.proto_factory()->create(type, val);
-
-    msg->GetReflection()->Swap(msg, new_msg.get());
-}
-
-void SetCommand::_set_field(gp::Message *msg,
-        const Path &path,
-        const StringView &val) const {
-    assert(msg != nullptr);
-
-    FieldRef field(msg, path);
-
-    _set_field(field, val);
-}
-
 void SetCommand::_set_field(FieldRef &field, const StringView &val) const {
-    if (field.field_desc->is_repeated()) {
-        throw Error("cannot set repeated field");
+    if (field.is_array_element()) {
+        return _set_array_element(field, val);
+    } else if (field.is_array()) {
+        throw Error("cannot set the whole array field");
     }
 
     if (field.field_desc->is_map()) {
         throw Error("cannot set map field");
     }
 
+    _set_scalar_field(field, val);
+}
+
+void SetCommand::_set_scalar_field(FieldRef &field, const StringView &val) const {
     switch (field.type()) {
     case gp::FieldDescriptor::CPPTYPE_INT32:
         _set_int32(field, val);
@@ -196,6 +158,49 @@ void SetCommand::_set_field(FieldRef &field, const StringView &val) const {
 
     case gp::FieldDescriptor::CPPTYPE_MESSAGE:
         _set_msg(field, val);
+        break;
+
+    default:
+        throw Error("unknown type");
+    }
+}
+
+void SetCommand::_set_array_element(FieldRef &field, const StringView &val) const {
+    switch (field.type()) {
+    case gp::FieldDescriptor::CPPTYPE_INT32:
+        _set_repeated_int32(field, val);
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_INT64:
+        _set_repeated_int64(field, val);
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_UINT32:
+        _set_repeated_uint32(field, val);
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_UINT64:
+        _set_repeated_uint64(field, val);
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_DOUBLE:
+        _set_repeated_double(field, val);
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_FLOAT:
+        _set_repeated_float(field, val);
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_BOOL:
+        _set_repeated_bool(field, val);
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_STRING:
+        _set_repeated_string(field, val);
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_MESSAGE:
+        _set_repeated_msg(field, val);
         break;
 
     default:
@@ -297,19 +302,149 @@ void SetCommand::_set_bool(FieldRef &field, const StringView &sv) const {
 void SetCommand::_set_string(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_STRING);
 
-    field.msg->GetReflection()->SetString(field.msg, field.field_desc, std::string(sv.data(), sv.size()));
+    field.msg->GetReflection()->SetString(field.msg,
+            field.field_desc,
+            std::string(sv.data(), sv.size()));
 }
 
 void SetCommand::_set_msg(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_MESSAGE);
 
-    auto &module = RedisProtobuf::instance();
-
-    auto new_msg = module.proto_factory()->create(field.msg->GetTypeName(), sv);
+    auto new_msg = RedisProtobuf::instance().proto_factory()->create(field.msg->GetTypeName(), sv);
 
     field.msg->GetReflection()->Swap(field.msg, new_msg.get());
 }
 
+void SetCommand::_set_repeated_int32(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_INT32);
+
+    try {
+        auto val = std::stoi(std::string(sv.data(), sv.size()));
+        field.msg->GetReflection()->SetRepeatedInt32(field.msg,
+                field.field_desc,
+                field.arr_idx,
+                val);
+    } catch (const std::exception &e) {
+        throw Error("not int32");
+    }
+}
+
+void SetCommand::_set_repeated_int64(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_INT64);
+
+    try {
+        auto val = std::stoll(std::string(sv.data(), sv.size()));
+        field.msg->GetReflection()->SetRepeatedInt64(field.msg,
+                field.field_desc,
+                field.arr_idx,
+                val);
+    } catch (const std::exception &e) {
+        throw Error("not int64");
+    }
+}
+
+void SetCommand::_set_repeated_uint32(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT32);
+
+    try {
+        auto val = std::stoul(std::string(sv.data(), sv.size()));
+        field.msg->GetReflection()->SetRepeatedUInt32(field.msg,
+                field.field_desc,
+                field.arr_idx,
+                val);
+    } catch (const std::exception &e) {
+        throw Error("not uint32");
+    }
+}
+
+void SetCommand::_set_repeated_uint64(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT64);
+
+    try {
+        auto val = std::stoull(std::string(sv.data(), sv.size()));
+        field.msg->GetReflection()->SetRepeatedUInt64(field.msg,
+                field.field_desc,
+                field.arr_idx,
+                val);
+    } catch (const std::exception &e) {
+        throw Error("not uint64");
+    }
+}
+
+void SetCommand::_set_repeated_double(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_DOUBLE);
+
+    try {
+        auto val = std::stod(std::string(sv.data(), sv.size()));
+        field.msg->GetReflection()->SetRepeatedDouble(field.msg,
+                field.field_desc,
+                field.arr_idx,
+                val);
+    } catch (const std::exception &e) {
+        throw Error("not double");
+    }
+}
+
+void SetCommand::_set_repeated_float(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_FLOAT);
+
+    try {
+        auto val = std::stof(std::string(sv.data(), sv.size()));
+        field.msg->GetReflection()->SetRepeatedFloat(field.msg,
+                field.field_desc,
+                field.arr_idx,
+                val);
+    } catch (const std::exception &e) {
+        throw Error("not float");
+    }
+}
+
+void SetCommand::_set_repeated_bool(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_BOOL);
+
+    bool b = false;
+    auto s = std::string(sv.data(), sv.size());
+    if (s == "true") {
+        b = true;
+    } else if (s == "false") {
+        b = false;
+    } else {
+        try {
+            auto val = std::stoi(s);
+            if (val == 0) {
+                b = false;
+            } else {
+                b = true;
+            }
+        } catch (const std::exception &e) {
+            throw Error("not bool");
+        }
+    }
+
+    field.msg->GetReflection()->SetRepeatedBool(field.msg,
+            field.field_desc,
+            field.arr_idx,
+            b);
+}
+
+void SetCommand::_set_repeated_string(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_STRING);
+
+    field.msg->GetReflection()->SetRepeatedString(field.msg,
+            field.field_desc,
+            field.arr_idx,
+            std::string(sv.data(), sv.size()));
+}
+
+void SetCommand::_set_repeated_msg(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_MESSAGE);
+
+    auto new_msg = RedisProtobuf::instance().proto_factory()->create(field.msg->GetTypeName(), sv);
+
+    const auto *reflection = field.msg->GetReflection();
+    auto *msg = reflection->MutableRepeatedMessage(field.msg, field.field_desc, field.arr_idx);
+    reflection->Swap(msg, new_msg.get());
+}
 
 }
 

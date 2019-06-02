@@ -42,16 +42,19 @@ public:
 private:
     struct Args {
         RedisModuleString *key_name;
+        // TODO: We might support multiple paths in the future.
         std::vector<Path> paths;
     };
 
     Args _parse_args(RedisModuleString **argv, int argc) const;
 
-    void _reply_with_nil(RedisModuleCtx *ctx, const std::vector<Path> &paths) const;
+    void _reply_with_nil(RedisModuleCtx *ctx) const;
 
     void _reply_with_msg(RedisModuleCtx *ctx,
             gp::Message &msg,
             const std::vector<Path> &paths) const;
+
+    void _get_array_element(RedisModuleCtx *ctx, const FieldRef &field) const;
 
     void _get_msg(RedisModuleCtx *ctx, const gp::Message &msg) const;
 

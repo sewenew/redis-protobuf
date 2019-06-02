@@ -67,9 +67,21 @@ private:
 
 struct FieldRef {
 public:
-    FieldRef(gp::Message *parent_msg, const Path &path);
+    FieldRef(gp::Message *root_msg, const Path &path);
 
     gp::FieldDescriptor::CppType type() const;
+
+    bool is_array() const {
+        return field_desc->is_repeated();
+    }
+
+    bool is_array_element() const {
+        return arr_idx >= 0;
+    }
+
+    bool is_map() const {
+        return field_desc->is_map();
+    }
 
     explicit operator bool() const {
         return field_desc != nullptr;
@@ -79,7 +91,7 @@ public:
 
     const gp::FieldDescriptor *field_desc = nullptr;
 
-    int arr_idx = 0;
+    int arr_idx = -1;
 
 private:
     enum class ParentType {
@@ -90,7 +102,9 @@ private:
         INVALID
     };
 
-    void _validate_parameters(gp::Message *parent_msg, const Path &path) const;
+    void _validate_parameters(gp::Message *root_msg, const Path &path) const;
+
+    ParentType _aggregate_field(const std::string &field, const gp::Reflection *reflection);
 
     ParentType _msg_field(const std::string &field, const gp::Reflection *reflection);
 
