@@ -31,6 +31,8 @@ namespace pb {
 
 // command: PB.SET key type|path value
 // return:  Integer reply: 1 if set successfully. 0, otherwise.
+// error:   If the type doesn't match the protobuf message type of the
+//          key, or the path doesn't exist, return an error reply.
 class SetCommand {
 public:
     int run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;

@@ -27,14 +27,13 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.GET key [path ...]
-// return:  If no path is specified or only one path is speicified, return
-//          the value of the key or field as a bulk string reply. If the
-//          doesn't exist, return a nil reply. If there're more than one
-//          path, return the value of these path as an array reply. The type
-//          of each elment of the array depends on the definition of the
-//          protobuf. If the key doesn't exist, return an array of nil reply.
-//          If any specified path doesn't exist, return an error reply.
+// command: PB.GET key [path]
+// return:  If no path is specified, return the protobuf message of the key
+//          as a bulk string reply. If path is specified, return the value
+//          of the field specified with the path, and the reply type depends
+//          on the definition of the protobuf. If the key doesn't exist,
+//          return a nil reply.
+// error:   If the path doesn't exist, return an error reply.
 class GetCommand {
 public:
     int run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;

@@ -30,7 +30,7 @@ namespace pb {
 
 // command: PB.TYPE key
 // return:  Simple string reply: the protobuf type of the key.
-//          If key doesn't exist, return nil reply.
+//          If key doesn't exist, return a nil reply.
 class TypeCommand {
 public:
     int run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;
