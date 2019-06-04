@@ -312,7 +312,8 @@ void SetCommand::_set_string(FieldRef &field, const StringView &sv) const {
 void SetCommand::_set_msg(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_MESSAGE);
 
-    auto new_msg = RedisProtobuf::instance().proto_factory()->create(field.msg()->GetTypeName(), sv);
+    auto new_msg = RedisProtobuf::instance().proto_factory()->create(
+            field.get_msg().GetTypeName(), sv);
     assert(new_msg);
 
     field.set_msg(*new_msg);
@@ -418,7 +419,8 @@ void SetCommand::_set_repeated_string(FieldRef &field, const StringView &sv) con
 void SetCommand::_set_repeated_msg(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_MESSAGE);
 
-    auto new_msg = RedisProtobuf::instance().proto_factory()->create(field.msg()->GetTypeName(), sv);
+    auto new_msg = RedisProtobuf::instance().proto_factory()->create(
+            field.get_msg().GetTypeName(), sv);
     assert(new_msg);
 
     field.set_repeated_msg(*new_msg);

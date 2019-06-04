@@ -132,7 +132,7 @@ void GetCommand::_get_scalar_field(RedisModuleCtx *ctx, const FieldRef &field) c
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_MESSAGE: {
-        auto json = util::msg_to_json(*field.msg());
+        auto json = util::msg_to_json(field.get_msg());
         RedisModule_ReplyWithStringBuffer(ctx, json.data(), json.size());
         break;
     }

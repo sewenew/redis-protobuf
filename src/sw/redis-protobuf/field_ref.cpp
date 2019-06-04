@@ -86,31 +86,41 @@ FieldRef::FieldRef(gp::Message *root_msg, const Path &path) {
 
     _msg = root_msg;
 
-    auto parent_type = ParentType::MSG;
-
     for (const auto &field : path.fields()) {
         assert(!field.empty() && _msg != nullptr);
 
         const auto *reflection = _msg->GetReflection();
 
-        if (field.back() == ']') {
-            // It's an array or a map.
-            parent_type = _aggregate_field(field, reflection);
-            continue;
+        if (_field_desc != nullptr){
+            if (type() != gp::FieldDescriptor::CPPTYPE_MESSAGE) {
+                throw Error("invalid path");
+            }
+
+            if (_field_desc->is_repeated()) {
+                assert(_arr_idx >= 0);
+                _msg = reflection->MutableRepeatedMessage(_msg, _field_desc, _arr_idx);
+                _arr_idx = -1;
+            } else if (_field_desc->is_map()) {
+                throw Error("map is not supported yet");
+            } else {
+                _msg = reflection->MutableMessage(_msg, _field_desc);
+            }
         }
 
-        if (parent_type == ParentType::MSG) {
-            parent_type = _msg_field(field, reflection);
+        if (field.back() == ']') {
+            // It's an array or a map.
+            _parse_aggregate_field(field);
         } else {
-            throw Error("invalid path");
+            _field_desc = _msg->GetDescriptor()->FindFieldByName(field);
+            if (_field_desc == nullptr) {
+                throw Error("field not found: " + field);
+            }
         }
     }
 }
 
 gp::FieldDescriptor::CppType FieldRef::type() const {
-    if (_field_desc == nullptr) {
-        throw Error("no field specified");
-    }
+    assert(_field_desc != nullptr);
 
     return _field_desc->cpp_type();
 }
@@ -148,7 +158,11 @@ void FieldRef::set_string(const std::string &val) {
 }
 
 void FieldRef::set_msg(gp::Message &msg) {
-    _msg->GetReflection()->Swap(_msg, &msg);
+    auto sub_msg = _msg->GetReflection()->MutableMessage(_msg, _field_desc);
+
+    assert(sub_msg->GetTypeName() == msg.GetTypeName());
+
+    sub_msg->GetReflection()->Swap(sub_msg, &msg);
 }
 
 int32_t FieldRef::get_int32() const {
@@ -181,6 +195,10 @@ bool FieldRef::get_bool() const {
 
 std::string FieldRef::get_string() const {
     return _msg->GetReflection()->GetString(*_msg, _field_desc);
+}
+
+const gp::Message& FieldRef::get_msg() const {
+    return _msg->GetReflection()->GetMessage(*_msg, _field_desc);
 }
 
 void FieldRef::set_repeated_int32(int32_t val) {
@@ -216,9 +234,8 @@ void FieldRef::set_repeated_string(const std::string &val) {
 }
 
 void FieldRef::set_repeated_msg(gp::Message &msg) {
-    const auto *reflection = _msg->GetReflection();
-    auto *sub_msg = reflection->MutableRepeatedMessage(_msg, _field_desc, _arr_idx);
-    reflection->Swap(sub_msg, &msg);
+    auto *sub_msg = _msg->GetReflection()->MutableRepeatedMessage(_msg, _field_desc, _arr_idx);
+    sub_msg->GetReflection()->Swap(sub_msg, &msg);
 }
 
 int32_t FieldRef::get_repeated_int32() const {
@@ -257,6 +274,20 @@ const gp::Message& FieldRef::get_repeated_msg() const {
     return _msg->GetReflection()->GetRepeatedMessage(*_msg, _field_desc, _arr_idx);
 }
 
+void FieldRef::clear() {
+    if (is_array_element()) {
+        throw Error("cannot clear an array element");
+    }
+
+    // TODO: map element.
+
+    if (_field_desc == nullptr) {
+        _msg->Clear();
+    } else {
+        _msg->GetReflection()->ClearField(_msg, _field_desc);
+    }
+}
+
 void FieldRef::_validate_parameters(gp::Message *root_msg, const Path &path) const {
     assert(root_msg != nullptr);
 
@@ -265,8 +296,7 @@ void FieldRef::_validate_parameters(gp::Message *root_msg, const Path &path) con
     }
 }
 
-FieldRef::ParentType FieldRef::_aggregate_field(const std::string &field,
-        const gp::Reflection *reflection) {
+void FieldRef::_parse_aggregate_field(const std::string &field) {
     assert(!field.empty() && field.back() == ']');
 
     auto pos = field.find('[');
@@ -278,80 +308,21 @@ FieldRef::ParentType FieldRef::_aggregate_field(const std::string &field,
     auto key = field.substr(pos + 1, field.size() - pos - 2);
 
     _field_desc = _msg->GetDescriptor()->FindFieldByName(name);
-    if (_field_desc == nullptr) {
-        throw Error("field not found: " + name);
-    }
 
     if (_field_desc->is_repeated()) {
-        return _arr_field(key, reflection);
-    } else if (_field_desc->is_map()) {
+        try {
+            _arr_idx = std::stoi(key);
+        } catch (const std::exception &e) {
+            throw Error("invalid array index: " + key);
+        }
+
+        auto size = _msg->GetReflection()->FieldSize(*_msg, _field_desc);
+        if (_arr_idx >= size) {
+            throw Error("array index is out-of-range: " + key + " : " + std::to_string(size));
+        }
+    } else {
         // TODO: support map
-        assert(false);
-    } else {
-        throw Error("invalid array or map");
-    }
-}
-
-FieldRef::ParentType FieldRef::_msg_field(const std::string &field,
-        const gp::Reflection *reflection) {
-    _field_desc = _msg->GetDescriptor()->FindFieldByName(field);
-    if (_field_desc == nullptr) {
-        throw Error("field not found: " + field);
-    }
-
-    if (_field_desc->is_repeated()) {
-        return ParentType::ARR;
-    } else if (_field_desc->is_map()) {
-        // TODO: how to do reflection with map?
-        assert(false);
-        return ParentType::MAP;
-    } else if (type() == gp::FieldDescriptor::CPPTYPE_MESSAGE) {
-        _msg = reflection->MutableMessage(_msg, _field_desc);
-        return ParentType::MSG;
-    } else {
-        return ParentType::SCALAR;
-    }
-}
-
-FieldRef::ParentType FieldRef::_arr_field(const std::string &field,
-        const gp::Reflection *reflection) {
-    assert(_field_desc != nullptr && _msg != nullptr);
-
-    _arr_idx = -1;
-    try {
-        _arr_idx = std::stoi(field);
-    } catch (const std::exception &e) {
-        throw Error("invalid array index: " + field);
-    }
-
-    auto size = reflection->FieldSize(*_msg, _field_desc);
-    if (_arr_idx >= size) {
-        throw Error("array index is out-of-range: " + field + " : " + std::to_string(size));
-    }
-
-    switch (type()) {
-    case gp::FieldDescriptor::CPPTYPE_INT32:
-    case gp::FieldDescriptor::CPPTYPE_INT64:
-    case gp::FieldDescriptor::CPPTYPE_UINT32:
-    case gp::FieldDescriptor::CPPTYPE_UINT64:
-    case gp::FieldDescriptor::CPPTYPE_DOUBLE:
-    case gp::FieldDescriptor::CPPTYPE_FLOAT:
-    case gp::FieldDescriptor::CPPTYPE_BOOL:
-    case gp::FieldDescriptor::CPPTYPE_STRING:
-        return ParentType::SCALAR;
-
-    case gp::FieldDescriptor::CPPTYPE_MESSAGE:
-        _msg = reflection->MutableRepeatedMessage(_msg, _field_desc, _arr_idx);
-        return ParentType::MSG;
-
-    case gp::FieldDescriptor::CPPTYPE_ENUM:
-        // TODO: support enum
-        assert(false);
-
-    // TODO: support map
-
-    default:
-        throw Error("invalid cpp type");
+        throw Error("not an array or map");
     }
 }
 

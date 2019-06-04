@@ -18,6 +18,7 @@
 #include "set_command.h"
 #include "get_command.h"
 #include "type_command.h"
+#include "clear_command.h"
 
 namespace sw {
 
@@ -65,6 +66,19 @@ void create_commands(RedisModuleCtx *ctx) {
                 1,
                 1) == REDISMODULE_ERR) {
         throw Error("failed to create get command");
+    }
+
+    if (RedisModule_CreateCommand(ctx,
+                "PB.CLEAR",
+                [](RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+                    ClearCommand cmd;
+                    return cmd.run(ctx, argv, argc);
+                },
+                "write deny-oom",
+                1,
+                1,
+                1) == REDISMODULE_ERR) {
+        throw Error("fail to create clear command");
     }
 }
 

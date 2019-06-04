@@ -80,7 +80,7 @@ public:
     }
 
     bool is_array() const {
-        return _field_desc->is_repeated();
+        return _field_desc != nullptr && _field_desc->is_repeated();
     }
 
     bool is_array_element() const {
@@ -88,7 +88,7 @@ public:
     }
 
     bool is_map() const {
-        return _field_desc->is_map();
+        return _field_desc != nullptr && _field_desc->is_map();
     }
 
     explicit operator bool() const {
@@ -113,6 +113,7 @@ public:
     double get_double() const;
     bool get_bool() const;
     std::string get_string() const;
+    const gp::Message& get_msg() const;
 
     void set_repeated_int32(int32_t val);
     void set_repeated_int64(int64_t val);
@@ -134,6 +135,8 @@ public:
     std::string get_repeated_string() const;
     const gp::Message& get_repeated_msg() const;
 
+    void clear();
+
 private:
     gp::Message *_msg = nullptr;
 
@@ -151,11 +154,7 @@ private:
 
     void _validate_parameters(gp::Message *root_msg, const Path &path) const;
 
-    ParentType _aggregate_field(const std::string &field, const gp::Reflection *reflection);
-
-    ParentType _msg_field(const std::string &field, const gp::Reflection *reflection);
-
-    ParentType _arr_field(const std::string &field, const gp::Reflection *reflection);
+    void _parse_aggregate_field(const std::string &field);
 };
 
 }
