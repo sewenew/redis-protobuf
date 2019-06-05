@@ -91,6 +91,8 @@ public:
         return _field_desc != nullptr && _field_desc->is_map();
     }
 
+    std::size_t array_size() const;
+
     explicit operator bool() const {
         return _field_desc != nullptr;
     }

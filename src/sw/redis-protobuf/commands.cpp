@@ -19,6 +19,7 @@
 #include "get_command.h"
 #include "type_command.h"
 #include "clear_command.h"
+#include "len_command.h"
 
 namespace sw {
 
@@ -39,7 +40,7 @@ void create_commands(RedisModuleCtx *ctx) {
                 1,
                 1,
                 1) == REDISMODULE_ERR) {
-        throw Error("failed to create type command");
+        throw Error("failed to create PB.TYPE command");
     }
 
     if (RedisModule_CreateCommand(ctx,
@@ -52,7 +53,7 @@ void create_commands(RedisModuleCtx *ctx) {
                 1,
                 1,
                 1) == REDISMODULE_ERR) {
-        throw Error("fail to create set command");
+        throw Error("fail to create PB.SET command");
     }
 
     if (RedisModule_CreateCommand(ctx,
@@ -65,7 +66,7 @@ void create_commands(RedisModuleCtx *ctx) {
                 1,
                 1,
                 1) == REDISMODULE_ERR) {
-        throw Error("failed to create get command");
+        throw Error("failed to create PB.GET command");
     }
 
     if (RedisModule_CreateCommand(ctx,
@@ -78,8 +79,22 @@ void create_commands(RedisModuleCtx *ctx) {
                 1,
                 1,
                 1) == REDISMODULE_ERR) {
-        throw Error("fail to create clear command");
+        throw Error("fail to create PB.CLEAR command");
     }
+
+    if (RedisModule_CreateCommand(ctx,
+                "PB.LEN",
+                [](RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+                    LenCommand cmd;
+                    return cmd.run(ctx, argv, argc);
+                },
+                "readonly",
+                1,
+                1,
+                1) == REDISMODULE_ERR) {
+        throw Error("failed to create PB.LEN command");
+    }
+
 }
 
 }

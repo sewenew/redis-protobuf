@@ -125,6 +125,14 @@ gp::FieldDescriptor::CppType FieldRef::type() const {
     return _field_desc->cpp_type();
 }
 
+std::size_t FieldRef::array_size() const {
+    if (!is_array()) {
+        throw Error("not an array");
+    }
+
+    return _msg->GetReflection()->FieldSize(*_msg, _field_desc);
+}
+
 void FieldRef::set_int32(int32_t val) {
     _msg->GetReflection()->SetInt32(_msg, _field_desc, val);
 }
