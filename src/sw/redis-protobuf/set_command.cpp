@@ -420,7 +420,7 @@ void SetCommand::_set_repeated_msg(FieldRef &field, const StringView &sv) const 
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_MESSAGE);
 
     auto new_msg = RedisProtobuf::instance().proto_factory()->create(
-            field.get_msg().GetTypeName(), sv);
+            field.get_repeated_msg().GetTypeName(), sv);
     assert(new_msg);
 
     field.set_repeated_msg(*new_msg);
