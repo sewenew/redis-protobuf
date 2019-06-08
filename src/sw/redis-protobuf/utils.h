@@ -68,6 +68,22 @@ namespace util {
 
 std::string msg_to_json(const gp::Message &msg);
 
+int32_t sv_to_int32(const StringView &sv);
+
+int64_t sv_to_int64(const StringView &sv);
+
+uint32_t sv_to_uint32(const StringView &sv);
+
+uint64_t sv_to_uint64(const StringView &sv);
+
+double sv_to_double(const StringView &sv);
+
+float sv_to_float(const StringView &sv);
+
+bool sv_to_bool(const StringView &sv);
+
+std::string sv_to_string(const StringView &sv);
+
 }
 
 namespace io {

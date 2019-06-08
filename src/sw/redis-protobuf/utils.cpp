@@ -53,6 +53,83 @@ std::string msg_to_json(const gp::Message &msg) {
     return json;
 }
 
+int32_t sv_to_int32(const StringView &sv) {
+    try {
+        return std::stoi(std::string(sv.data(), sv.size()));
+    } catch (const std::exception &e) {
+        throw Error("not int32");
+    }
+}
+
+int64_t sv_to_int64(const StringView &sv) {
+    try {
+        return std::stoll(std::string(sv.data(), sv.size()));
+    } catch (const std::exception &e) {
+        throw Error("not int64");
+    }
+}
+
+uint32_t sv_to_uint32(const StringView &sv) {
+    try {
+        // TODO: check if it's overflow
+        return std::stoul(std::string(sv.data(), sv.size()));
+    } catch (const std::exception &e) {
+        throw Error("not uint32");
+    }
+}
+
+uint64_t sv_to_uint64(const StringView &sv) {
+    try {
+        return std::stoull(std::string(sv.data(), sv.size()));
+    } catch (const std::exception &e) {
+        throw Error("not uint64");
+    }
+}
+
+double sv_to_double(const StringView &sv) {
+    try {
+        return std::stod(std::string(sv.data(), sv.size()));
+    } catch (const std::exception &e) {
+        throw Error("not double");
+    }
+}
+
+float sv_to_float(const StringView &sv) {
+    try {
+        return std::stof(std::string(sv.data(), sv.size()));
+    } catch (const std::exception &e) {
+        throw Error("not float");
+    }
+}
+
+bool sv_to_bool(const StringView &sv) {
+    bool b = false;
+    auto s = std::string(sv.data(), sv.size());
+    // TODO: make it case insensitive
+    if (s == "true") {
+        b = true;
+    } else if (s == "false") {
+        b = false;
+    } else {
+        try {
+            auto val = std::stoi(s);
+            if (val == 0) {
+                b = false;
+            } else {
+                b = true;
+            }
+        } catch (const std::exception &e) {
+            throw Error("not bool");
+        }
+    }
+
+    return b;
+}
+
+std::string sv_to_string(const StringView &sv) {
+    return std::string(sv.data(), sv.size());
+}
+
 }
 
 namespace io {

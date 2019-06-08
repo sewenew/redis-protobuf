@@ -35,6 +35,8 @@ class Path {
 public:
     explicit Path(const StringView &str);
 
+    Path() = default;
+
     Path(const Path &) = default;
     Path& operator=(const Path &) = default;
 
@@ -71,13 +73,7 @@ public:
 
     gp::FieldDescriptor::CppType type() const;
 
-    const gp::Message* msg() const {
-        return _msg;
-    }
-
-    gp::Message* msg() {
-        return _msg;
-    }
+    std::string msg_type() const;
 
     bool is_array() const {
         return _field_desc != nullptr && _field_desc->is_repeated();
@@ -91,7 +87,7 @@ public:
         return _field_desc != nullptr && _field_desc->is_map();
     }
 
-    std::size_t array_size() const;
+    int array_size() const;
 
     explicit operator bool() const {
         return _field_desc != nullptr;
@@ -136,6 +132,16 @@ public:
     bool get_repeated_bool() const;
     std::string get_repeated_string() const;
     const gp::Message& get_repeated_msg() const;
+
+    void add_int32(int32_t val);
+    void add_int64(int64_t val);
+    void add_uint32(uint32_t val);
+    void add_uint64(uint64_t val);
+    void add_float(float val);
+    void add_double(double val);
+    void add_bool(bool val);
+    void add_string(const std::string &val);
+    void add_msg(gp::Message &msg);
 
     void clear();
 

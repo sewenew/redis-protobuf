@@ -125,8 +125,18 @@ gp::FieldDescriptor::CppType FieldRef::type() const {
     return _field_desc->cpp_type();
 }
 
-std::size_t FieldRef::array_size() const {
-    if (!is_array()) {
+std::string FieldRef::msg_type() const {
+    assert(_field_desc != nullptr);
+
+    if (type() != gp::FieldDescriptor::CPPTYPE_MESSAGE) {
+        throw Error("not a message");
+    }
+
+    return _field_desc->message_type()->full_name();
+}
+
+int FieldRef::array_size() const {
+    if (!is_array() || is_array_element()) {
         throw Error("not an array");
     }
 
@@ -280,6 +290,46 @@ std::string FieldRef::get_repeated_string() const {
 
 const gp::Message& FieldRef::get_repeated_msg() const {
     return _msg->GetReflection()->GetRepeatedMessage(*_msg, _field_desc, _arr_idx);
+}
+
+void FieldRef::add_int32(int32_t val) {
+    _msg->GetReflection()->AddInt32(_msg, _field_desc, val);
+}
+
+void FieldRef::add_int64(int64_t val) {
+    _msg->GetReflection()->AddInt64(_msg, _field_desc, val);
+}
+
+void FieldRef::add_uint32(uint32_t val) {
+    _msg->GetReflection()->AddUInt32(_msg, _field_desc, val);
+}
+
+void FieldRef::add_uint64(uint64_t val) {
+    _msg->GetReflection()->AddUInt64(_msg, _field_desc, val);
+}
+
+void FieldRef::add_float(float val) {
+    _msg->GetReflection()->AddFloat(_msg, _field_desc, val);
+}
+
+void FieldRef::add_double(double val) {
+    _msg->GetReflection()->AddDouble(_msg, _field_desc, val);
+}
+
+void FieldRef::add_bool(bool val) {
+    _msg->GetReflection()->AddBool(_msg, _field_desc, val);
+}
+
+void FieldRef::add_string(const std::string &val) {
+    _msg->GetReflection()->AddString(_msg, _field_desc, val);
+}
+
+void FieldRef::add_msg(gp::Message &msg) {
+    auto sub_msg = _msg->GetReflection()->AddMessage(_msg, _field_desc);
+
+    assert(sub_msg->GetTypeName() == msg.GetTypeName());
+
+    sub_msg->GetReflection()->Swap(sub_msg, &msg);
 }
 
 void FieldRef::clear() {
