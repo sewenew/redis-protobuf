@@ -22,6 +22,7 @@
 #include "len_command.h"
 #include "append_command.h"
 #include "del_command.h"
+#include "schema_command.h"
 
 namespace sw {
 
@@ -121,6 +122,19 @@ void create_commands(RedisModuleCtx *ctx) {
                 1,
                 1) == REDISMODULE_ERR) {
         throw Error("fail to create PB.DEL command");
+    }
+
+    if (RedisModule_CreateCommand(ctx,
+                "PB.SCHEMA",
+                [](RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+                    SchemaCommand cmd;
+                    return cmd.run(ctx, argv, argc);
+                },
+                "readonly",
+                1,
+                1,
+                1) == REDISMODULE_ERR) {
+        throw Error("failed to create PB.SCHEMA command");
     }
 }
 
