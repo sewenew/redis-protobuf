@@ -396,51 +396,13 @@ void FieldRef::_parse_aggregate_field(const std::string &field) {
 void FieldRef::_del_array_element() {
     assert(is_array_element());
 
-    switch (type()) {
-    case gp::FieldDescriptor::CPPTYPE_INT32:
-        _del<int32_t>();
-        break;
-
-    case gp::FieldDescriptor::CPPTYPE_INT64:
-        _del<int64_t>();
-        break;
-
-    case gp::FieldDescriptor::CPPTYPE_UINT32:
-        _del<uint32_t>();
-        break;
-
-    case gp::FieldDescriptor::CPPTYPE_UINT64:
-        _del<uint64_t>();
-        break;
-
-    case gp::FieldDescriptor::CPPTYPE_DOUBLE:
-        _del<double>();
-        break;
-
-    case gp::FieldDescriptor::CPPTYPE_FLOAT:
-        _del<float>();
-        break;
-
-    case gp::FieldDescriptor::CPPTYPE_BOOL:
-        _del<bool>();
-        break;
-
-    case gp::FieldDescriptor::CPPTYPE_STRING:
-        _del<std::string>();
-        break;
-
-    case gp::FieldDescriptor::CPPTYPE_MESSAGE:
-        _del<gp::Message>();
-        break;
-
-    case gp::FieldDescriptor::CPPTYPE_ENUM:
-        throw Error("cannot del enum array");
-        break;
-
-    default:
-        throw Error("type is not supported yet");
-        break;
+    const auto *reflection = _msg->GetReflection();
+    auto size = reflection->FieldSize(*_msg, _field_desc);
+    for (auto idx = _arr_idx; idx != size - 1; ++idx) {
+        reflection->SwapElements(_msg, _field_desc, idx, idx + 1);
     }
+
+    reflection->RemoveLast(_msg, _field_desc);
 }
 
 }

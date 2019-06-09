@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 #include <google/protobuf/message.h>
-#include <google/protobuf/reflection.h>
 #include "module_api.h"
 #include "utils.h"
 
@@ -168,20 +167,6 @@ private:
     void _parse_aggregate_field(const std::string &field);
 
     void _del_array_element();
-
-    template <typename T>
-    void _del() {
-        assert(is_array_element());
-
-        const auto *reflection = _msg->GetReflection();
-        auto field = reflection->GetMutableRepeatedFieldRef<T>(_msg, _field_desc);
-        auto size = reflection->FieldSize(*_msg, _field_desc);
-        for (auto idx = _arr_idx; idx != size - 1; ++idx) {
-            field.SwapElements(idx, idx + 1);
-        }
-        field.RemoveLast();
-    }
-
 };
 
 }
