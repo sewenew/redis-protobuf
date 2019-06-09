@@ -31,8 +31,9 @@ namespace pb {
 
 // command: PB.APPEND key path element [element, element...]
 // return:  Integer reply: return the length of the array after the append operations.
-// error:   If the path doesn't exist, or the corresponding field is not an array,
-//          return an error reply.
+//          Or return the length of the string after the append operations.
+// error:   If the path doesn't exist, or the corresponding field is not an array, or
+//          a string, return an error reply.
 class AppendCommand {
 public:
     int run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;
@@ -46,9 +47,11 @@ private:
 
     Args _parse_args(RedisModuleString **argv, int argc) const;
 
-    void _append(FieldRef &field, const std::vector<StringView> &elements) const;
+    long long _append(FieldRef &field, const std::vector<StringView> &elements) const;
 
-    void _append(FieldRef &field, const StringView &val) const;
+    void _append_arr(FieldRef &field, const StringView &val) const;
+
+    long long _append_str(FieldRef &field, const std::vector<StringView> &elements) const;
 
     void _add_msg(FieldRef &field, const StringView &val) const;
 };

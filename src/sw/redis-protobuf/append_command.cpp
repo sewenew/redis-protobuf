@@ -40,7 +40,7 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         if (!api::key_exists(key.get(), module.type())) {
             auto msg = module.proto_factory()->create(path.type());
             FieldRef field(msg.get(), path);
-            _append(field, args.elements);
+            len = _append(field, args.elements);
 
             if (RedisModule_ModuleTypeSetValue(key.get(),
                         module.type(),
@@ -49,8 +49,6 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
             }
 
             msg.release();
-
-            len = args.elements.size();
         } else {
             auto *msg = api::get_msg_by_key(key.get());
             assert(msg != nullptr);
@@ -61,9 +59,7 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
             FieldRef field(msg, path);
             // TODO: create a new message, and append to that message, then swap to this message.
-            _append(field, args.elements);
-
-            len = field.array_size();
+            len = _append(field, args.elements);
         }
 
         return RedisModule_ReplyWithLongLong(ctx, len);
@@ -95,17 +91,22 @@ AppendCommand::Args AppendCommand::_parse_args(RedisModuleString **argv, int arg
     return args;
 }
 
-void AppendCommand::_append(FieldRef &field, const std::vector<StringView> &elements) const {
-    if (!field.is_array() || field.is_array_element()) {
-        throw Error("not an array");
-    }
+long long AppendCommand::_append(FieldRef &field,
+        const std::vector<StringView> &elements) const {
+    if (field.is_array() && !field.is_array_element()) {
+        for (const auto &ele : elements) {
+            _append_arr(field, ele);
+        }
 
-    for (const auto &ele : elements) {
-        _append(field, ele);
+        return field.array_size();
+    } else if (field.type() == gp::FieldDescriptor::CPPTYPE_STRING) {
+        return _append_str(field, elements);
+    } else {
+        throw Error("not an array or string");
     }
 }
 
-void AppendCommand::_append(FieldRef &field, const StringView &val) const {
+void AppendCommand::_append_arr(FieldRef &field, const StringView &val) const {
     assert(field.is_array() && !field.is_array_element());
 
     switch (field.type()) {
@@ -148,6 +149,25 @@ void AppendCommand::_append(FieldRef &field, const StringView &val) const {
     default:
         throw Error("unknown type");
     }
+}
+
+long long AppendCommand::_append_str(FieldRef &field,
+        const std::vector<StringView> &elements) const {
+    std::string str;
+    for (const auto &ele : elements) {
+        str += std::string(ele.data(), ele.size());
+    }
+
+    if (field.is_array_element()) {
+        str = field.get_repeated_string() + str;
+        field.set_repeated_string(str);
+    } else {
+        // TODO: map element
+        str = field.get_string() + str;
+        field.set_string(str);
+    }
+
+    return str.size();
 }
 
 void AppendCommand::_add_msg(FieldRef &field, const StringView &val) const {
