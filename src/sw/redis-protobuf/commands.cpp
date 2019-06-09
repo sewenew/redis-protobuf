@@ -21,6 +21,7 @@
 #include "clear_command.h"
 #include "len_command.h"
 #include "append_command.h"
+#include "del_command.h"
 
 namespace sw {
 
@@ -107,6 +108,19 @@ void create_commands(RedisModuleCtx *ctx) {
                 1,
                 1) == REDISMODULE_ERR) {
         throw Error("fail to create PB.APPEND command");
+    }
+
+    if (RedisModule_CreateCommand(ctx,
+                "PB.DEL",
+                [](RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+                    DelCommand cmd;
+                    return cmd.run(ctx, argv, argc);
+                },
+                "write deny-oom",
+                1,
+                1,
+                1) == REDISMODULE_ERR) {
+        throw Error("fail to create PB.DEL command");
     }
 }
 

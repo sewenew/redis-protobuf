@@ -346,6 +346,15 @@ void FieldRef::clear() {
     }
 }
 
+void FieldRef::del() {
+    if (is_array_element()) {
+        _del_array_element();
+    } else {
+        // TODO: support map
+        throw Error("can only delete array element");
+    }
+}
+
 void FieldRef::_validate_parameters(gp::Message *root_msg, const Path &path) const {
     assert(root_msg != nullptr);
 
@@ -381,6 +390,56 @@ void FieldRef::_parse_aggregate_field(const std::string &field) {
     } else {
         // TODO: support map
         throw Error("not an array or map");
+    }
+}
+
+void FieldRef::_del_array_element() {
+    assert(is_array_element());
+
+    switch (type()) {
+    case gp::FieldDescriptor::CPPTYPE_INT32:
+        _del<int32_t>();
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_INT64:
+        _del<int64_t>();
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_UINT32:
+        _del<uint32_t>();
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_UINT64:
+        _del<uint64_t>();
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_DOUBLE:
+        _del<double>();
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_FLOAT:
+        _del<float>();
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_BOOL:
+        _del<bool>();
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_STRING:
+        _del<std::string>();
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_MESSAGE:
+        _del<gp::Message>();
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_ENUM:
+        throw Error("cannot del enum array");
+        break;
+
+    default:
+        throw Error("type is not supported yet");
+        break;
     }
 }
 
