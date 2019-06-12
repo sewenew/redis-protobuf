@@ -355,6 +355,20 @@ void FieldRef::del() {
     }
 }
 
+void FieldRef::merge(const gp::Message &msg) {
+    assert(_field_desc != nullptr);
+
+    if (type() != gp::FieldDescriptor::CPPTYPE_MESSAGE) {
+        throw Error("not a message");
+    }
+
+    auto sub_msg = _msg->GetReflection()->MutableMessage(_msg, _field_desc);
+
+    assert(sub_msg->GetTypeName() == msg.GetTypeName());
+
+    sub_msg->MergeFrom(msg);
+}
+
 void FieldRef::_validate_parameters(gp::Message *root_msg, const Path &path) const {
     assert(root_msg != nullptr);
 

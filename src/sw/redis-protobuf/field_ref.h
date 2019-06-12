@@ -147,6 +147,8 @@ public:
 
     void del();
 
+    void merge(const gp::Message &msg);
+
 private:
     gp::Message *_msg = nullptr;
 
