@@ -130,7 +130,7 @@ void create_commands(RedisModuleCtx *ctx) {
                     SchemaCommand cmd;
                     return cmd.run(ctx, argv, argc);
                 },
-                "readonly",
+                "readonly getkeys-api",
                 1,
                 1,
                 1) == REDISMODULE_ERR) {
