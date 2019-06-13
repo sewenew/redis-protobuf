@@ -49,7 +49,7 @@ private:
 
     void _merge(const Args &args, gp::Message &msg) const;
 
-    void _merge_msg(const StringView &val, gp::Message &msg) const;
+    void _merge_msg(const std::string &type, const StringView &val, gp::Message &msg) const;
 
     void _merge_sub_msg(const Path &path, const StringView &val, gp::Message &msg) const;
 };

@@ -74,14 +74,20 @@ void MergeCommand::_merge(const Args &args, gp::Message &msg) const {
 
     const auto &path = args.paths.front();
     if (path.empty()) {
-        _merge_msg(args.val, msg);
+        _merge_msg(path.type(), args.val, msg);
     } else {
         _merge_sub_msg(path, args.val, msg);
     }
 }
 
-void MergeCommand::_merge_msg(const StringView &val, gp::Message &msg) const {
-    auto other = RedisProtobuf::instance().proto_factory()->create(msg.GetTypeName(), val);
+void MergeCommand::_merge_msg(const std::string &type,
+        const StringView &val,
+        gp::Message &msg) const {
+    if (type != msg.GetTypeName()) {
+        throw Error("type mismatch");
+    }
+
+    auto other = RedisProtobuf::instance().proto_factory()->create(type, val);
     assert(other);
 
     msg.MergeFrom(*other);
