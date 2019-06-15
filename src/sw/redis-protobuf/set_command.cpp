@@ -30,8 +30,6 @@ int SetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
     try {
         assert(ctx != nullptr);
 
-        // TODO: if key exist and type mismatch, return false
-        // TODO: add NX, XX and EX support
         // TODO: if the ByteSize is too large, serialization might fail.
 
         auto args = _parse_args(argv, argc);
@@ -41,9 +39,22 @@ int SetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
         assert(key);
 
         if (!api::key_exists(key.get(), RedisProtobuf::instance().type())) {
+            if (args.opt == Args::Opt::XX) {
+                return RedisModule_ReplyWithLongLong(ctx, 0);
+            }
+
             _create_msg(*key, path, args.val);
         } else {
+            if (args.opt == Args::Opt::NX) {
+                return RedisModule_ReplyWithLongLong(ctx, 0);
+            }
+
             _set_msg(*key, path, args.val);
+        }
+
+        auto expire = args.expire.count();
+        if (expire > 0) {
+            RedisModule_SetExpire(key.get(), expire);
         }
 
         return RedisModule_ReplyWithLongLong(ctx, 1);
@@ -59,11 +70,79 @@ int SetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
 SetCommand::Args SetCommand::_parse_args(RedisModuleString **argv, int argc) const {
     assert(argv != nullptr);
 
-    if (argc != 4) {
+    if (argc < 4) {
         throw WrongArityError();
     }
 
-    return {argv[1], Path(argv[2]), StringView(argv[3])};
+    Args args;
+    args.key_name = argv[1];
+
+    auto pos = _parse_opts(argv, argc, args);
+    if (pos + 2 != argc) {
+        throw WrongArityError();
+    }
+
+    args.path = Path(argv[pos]);
+    args.val = argv[pos + 1];
+
+    return args;
+}
+
+int SetCommand::_parse_opts(RedisModuleString **argv, int argc, Args &args) const {
+    auto idx = 2;
+    while (idx < argc) {
+        auto opt = StringView(argv[idx]);
+
+        if (util::str_case_equal(opt, "--NX")) {
+            if (args.opt != Args::Opt::NONE) {
+                throw Error("syntax error");
+            }
+
+            args.opt = Args::Opt::NX;
+        } else if (util::str_case_equal(opt, "--XX")) {
+            if (args.opt != Args::Opt::NONE) {
+                throw Error("syntax error");
+            }
+
+            args.opt = Args::Opt::XX;
+        } else if (util::str_case_equal(opt, "--EX")) {
+            if (args.expire != std::chrono::milliseconds(0) || idx + 1 >= argc) {
+                throw Error("syntax error");
+            }
+
+            // NOTE: this is tricky, that we modified idx in the loop.
+            ++idx;
+
+            auto expire = _parse_expire(argv[idx]);
+            args.expire = std::chrono::seconds(expire);
+        } else if (util::str_case_equal(opt, "--PX")) {
+            if (args.expire != std::chrono::milliseconds(0) || idx + 1 >= argc) {
+                throw Error("syntax error");
+            }
+
+            // NOTE: this is tricky, that we modified idx in the loop.
+            ++idx;
+
+            auto expire = _parse_expire(argv[idx]);
+            args.expire = std::chrono::milliseconds(expire);
+        } else {
+            // Finish parsing options.
+            break;
+        }
+
+        ++idx;
+    }
+
+    return idx;
+}
+
+int64_t SetCommand::_parse_expire(const StringView &sv) const {
+    auto expire = util::sv_to_int64(sv);
+    if (expire <= 0) {
+        throw Error("expire must larger than 0");
+    }
+
+    return expire;
 }
 
 void SetCommand::_create_msg(RedisModuleKey &key,

@@ -84,6 +84,8 @@ bool sv_to_bool(const StringView &sv);
 
 std::string sv_to_string(const StringView &sv);
 
+bool str_case_equal(const StringView &s1, const StringView &s2);
+
 }
 
 namespace io {

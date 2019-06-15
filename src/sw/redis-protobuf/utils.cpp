@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <cassert>
+#include <cctype>
 #include <google/protobuf/util/json_util.h>
 #include "errors.h"
 
@@ -128,6 +129,23 @@ bool sv_to_bool(const StringView &sv) {
 
 std::string sv_to_string(const StringView &sv) {
     return std::string(sv.data(), sv.size());
+}
+
+bool str_case_equal(const StringView &s1, const StringView &s2) {
+    if (s1.size() != s2.size()) {
+        return false;
+    }
+
+    const auto *p1 = s1.data();
+    const auto *p2 = s2.data();
+    for (std::size_t idx = 0; idx != s1.size(); ++idx) {
+        if (static_cast<char>(std::toupper(static_cast<unsigned char>(p1[idx])))
+                != static_cast<char>(std::toupper(static_cast<unsigned char>(p2[idx])))) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 }
