@@ -235,6 +235,10 @@ void SetCommand::_set_scalar_field(FieldRef &field, const StringView &val) const
         _set_bool(field, val);
         break;
 
+    case gp::FieldDescriptor::CPPTYPE_ENUM:
+        _set_enum(field, val);
+        break;
+
     case gp::FieldDescriptor::CPPTYPE_STRING:
         _set_string(field, val);
         break;
@@ -278,6 +282,10 @@ void SetCommand::_set_array_element(FieldRef &field, const StringView &val) cons
         _set_repeated_bool(field, val);
         break;
 
+    case gp::FieldDescriptor::CPPTYPE_ENUM:
+        _set_repeated_enum(field, val);
+        break;
+
     case gp::FieldDescriptor::CPPTYPE_STRING:
         _set_repeated_string(field, val);
         break;
@@ -294,98 +302,63 @@ void SetCommand::_set_array_element(FieldRef &field, const StringView &val) cons
 void SetCommand::_set_int32(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_INT32);
 
-    try {
-        auto val = std::stoi(std::string(sv.data(), sv.size()));
-        field.set_int32(val);
-    } catch (const std::exception &e) {
-        throw Error("not int32");
-    }
+    auto val = util::sv_to_int32(sv);
+    field.set_int32(val);
 }
 
 void SetCommand::_set_int64(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_INT64);
 
-    try {
-        auto val = std::stoll(std::string(sv.data(), sv.size()));
-        field.set_int64(val);
-    } catch (const std::exception &e) {
-        throw Error("not int64");
-    }
+    auto val = util::sv_to_int64(sv);
+    field.set_int64(val);
 }
 
 void SetCommand::_set_uint32(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT32);
 
-    try {
-        auto val = std::stoul(std::string(sv.data(), sv.size()));
-        field.set_uint32(val);
-    } catch (const std::exception &e) {
-        throw Error("not uint32");
-    }
+    auto val = util::sv_to_uint32(sv);
+    field.set_uint32(val);
 }
 
 void SetCommand::_set_uint64(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT64);
 
-    try {
-        auto val = std::stoull(std::string(sv.data(), sv.size()));
-        field.set_uint64(val);
-    } catch (const std::exception &e) {
-        throw Error("not uint64");
-    }
+    auto val = util::sv_to_uint64(sv);
+    field.set_uint64(val);
 }
 
 void SetCommand::_set_double(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_DOUBLE);
 
-    try {
-        auto val = std::stod(std::string(sv.data(), sv.size()));
-        field.set_double(val);
-    } catch (const std::exception &e) {
-        throw Error("not double");
-    }
+    auto val = util::sv_to_double(sv);
+    field.set_double(val);
 }
 
 void SetCommand::_set_float(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_FLOAT);
 
-    try {
-        auto val = std::stof(std::string(sv.data(), sv.size()));
-        field.set_float(val);
-    } catch (const std::exception &e) {
-        throw Error("not float");
-    }
+    auto val = util::sv_to_float(sv);
+    field.set_float(val);
 }
 
 void SetCommand::_set_bool(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_BOOL);
 
-    bool b = false;
-    auto s = std::string(sv.data(), sv.size());
-    if (s == "true") {
-        b = true;
-    } else if (s == "false") {
-        b = false;
-    } else {
-        try {
-            auto val = std::stoi(s);
-            if (val == 0) {
-                b = false;
-            } else {
-                b = true;
-            }
-        } catch (const std::exception &e) {
-            throw Error("not bool");
-        }
-    }
+    auto val = util::sv_to_bool(sv);
+    field.set_bool(val);
+}
 
-    field.set_bool(b);
+void SetCommand::_set_enum(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_ENUM);
+
+    auto val = util::sv_to_int32(sv);
+    field.set_enum(val);
 }
 
 void SetCommand::_set_string(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_STRING);
 
-    field.set_string(std::string(sv.data(), sv.size()));
+    field.set_string(util::sv_to_string(sv));
 }
 
 void SetCommand::_set_msg(FieldRef &field, const StringView &sv) const {
@@ -400,98 +373,63 @@ void SetCommand::_set_msg(FieldRef &field, const StringView &sv) const {
 void SetCommand::_set_repeated_int32(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_INT32);
 
-    try {
-        auto val = std::stoi(std::string(sv.data(), sv.size()));
-        field.set_repeated_int32(val);
-    } catch (const std::exception &e) {
-        throw Error("not int32");
-    }
+    auto val = util::sv_to_int32(sv);
+    field.set_repeated_int32(val);
 }
 
 void SetCommand::_set_repeated_int64(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_INT64);
 
-    try {
-        auto val = std::stoll(std::string(sv.data(), sv.size()));
-        field.set_repeated_int64(val);
-    } catch (const std::exception &e) {
-        throw Error("not int64");
-    }
+    auto val = util::sv_to_int64(sv);
+    field.set_repeated_int64(val);
 }
 
 void SetCommand::_set_repeated_uint32(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT32);
 
-    try {
-        auto val = std::stoul(std::string(sv.data(), sv.size()));
-        field.set_repeated_uint32(val);
-    } catch (const std::exception &e) {
-        throw Error("not uint32");
-    }
+    auto val = util::sv_to_uint32(sv);
+    field.set_repeated_uint32(val);
 }
 
 void SetCommand::_set_repeated_uint64(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT64);
 
-    try {
-        auto val = std::stoull(std::string(sv.data(), sv.size()));
-        field.set_uint64(val);
-    } catch (const std::exception &e) {
-        throw Error("not uint64");
-    }
+    auto val = util::sv_to_uint64(sv);
+    field.set_uint64(val);
 }
 
 void SetCommand::_set_repeated_double(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_DOUBLE);
 
-    try {
-        auto val = std::stod(std::string(sv.data(), sv.size()));
-        field.set_double(val);
-    } catch (const std::exception &e) {
-        throw Error("not double");
-    }
+    auto val = util::sv_to_double(sv);
+    field.set_double(val);
 }
 
 void SetCommand::_set_repeated_float(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_FLOAT);
 
-    try {
-        auto val = std::stof(std::string(sv.data(), sv.size()));
-        field.set_float(val);
-    } catch (const std::exception &e) {
-        throw Error("not float");
-    }
+    auto val = util::sv_to_float(sv);
+    field.set_float(val);
 }
 
 void SetCommand::_set_repeated_bool(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_BOOL);
 
-    bool b = false;
-    auto s = std::string(sv.data(), sv.size());
-    if (s == "true") {
-        b = true;
-    } else if (s == "false") {
-        b = false;
-    } else {
-        try {
-            auto val = std::stoi(s);
-            if (val == 0) {
-                b = false;
-            } else {
-                b = true;
-            }
-        } catch (const std::exception &e) {
-            throw Error("not bool");
-        }
-    }
+    auto val = util::sv_to_bool(sv);
+    field.set_repeated_bool(val);
+}
 
-    field.set_repeated_bool(b);
+void SetCommand::_set_repeated_enum(FieldRef &field, const StringView &sv) const {
+    assert(field.type() == gp::FieldDescriptor::CPPTYPE_ENUM);
+
+    auto val = util::sv_to_int32(sv);
+    field.set_repeated_enum(val);
 }
 
 void SetCommand::_set_repeated_string(FieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_STRING);
 
-    field.set_repeated_string(std::string(sv.data(), sv.size()));
+    field.set_repeated_string(util::sv_to_string(sv));
 }
 
 void SetCommand::_set_repeated_msg(FieldRef &field, const StringView &sv) const {

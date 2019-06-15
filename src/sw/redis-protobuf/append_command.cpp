@@ -138,6 +138,10 @@ void AppendCommand::_append_arr(FieldRef &field, const StringView &val) const {
         field.add_bool(util::sv_to_bool(val));
         break;
 
+    case gp::FieldDescriptor::CPPTYPE_ENUM:
+        field.add_enum(util::sv_to_int32(val));
+        break;
+
     case gp::FieldDescriptor::CPPTYPE_STRING:
         field.add_string(util::sv_to_string(val));
         break;

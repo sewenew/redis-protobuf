@@ -126,6 +126,11 @@ void GetCommand::_get_scalar_field(RedisModuleCtx *ctx, const FieldRef &field) c
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
+    case gp::FieldDescriptor::CPPTYPE_ENUM: {
+        auto val = field.get_enum();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
     case gp::FieldDescriptor::CPPTYPE_STRING: {
         auto val = field.get_string();
         RedisModule_ReplyWithStringBuffer(ctx, val.data(), val.size());
@@ -134,11 +139,6 @@ void GetCommand::_get_scalar_field(RedisModuleCtx *ctx, const FieldRef &field) c
     case gp::FieldDescriptor::CPPTYPE_MESSAGE: {
         auto json = util::msg_to_json(field.get_msg());
         RedisModule_ReplyWithStringBuffer(ctx, json.data(), json.size());
-        break;
-    }
-    case gp::FieldDescriptor::CPPTYPE_ENUM: {
-        // TODO: add enum support
-        throw Error("cannot get enum field");
         break;
     }
     default:
@@ -185,6 +185,11 @@ void GetCommand::_get_array_element(RedisModuleCtx *ctx, const FieldRef &field) 
         RedisModule_ReplyWithLongLong(ctx, val);
         break;
     }
+    case gp::FieldDescriptor::CPPTYPE_ENUM: {
+        auto val = field.get_repeated_enum();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
     case gp::FieldDescriptor::CPPTYPE_STRING: {
         const auto &val = field.get_repeated_string();
         RedisModule_ReplyWithStringBuffer(ctx, val.data(), val.size());
@@ -194,11 +199,6 @@ void GetCommand::_get_array_element(RedisModuleCtx *ctx, const FieldRef &field) 
         const auto &msg = field.get_repeated_msg();
         auto json = util::msg_to_json(msg);
         RedisModule_ReplyWithStringBuffer(ctx, json.data(), json.size());
-        break;
-    }
-    case gp::FieldDescriptor::CPPTYPE_ENUM: {
-        // TODO: add enum support
-        throw Error("cannot get enum field");
         break;
     }
     default:

@@ -171,6 +171,10 @@ void FieldRef::set_bool(bool val) {
     _msg->GetReflection()->SetBool(_msg, _field_desc, val);
 }
 
+void FieldRef::set_enum(int val) {
+    _msg->GetReflection()->SetEnumValue(_msg, _field_desc, val);
+}
+
 void FieldRef::set_string(const std::string &val) {
     _msg->GetReflection()->SetString(_msg, _field_desc, val);
 }
@@ -211,6 +215,10 @@ bool FieldRef::get_bool() const {
     return _msg->GetReflection()->GetBool(*_msg, _field_desc);
 }
 
+int FieldRef::get_enum() const {
+    return _msg->GetReflection()->GetEnumValue(*_msg, _field_desc);
+}
+
 std::string FieldRef::get_string() const {
     return _msg->GetReflection()->GetString(*_msg, _field_desc);
 }
@@ -245,6 +253,10 @@ void FieldRef::set_repeated_double(double val) {
 
 void FieldRef::set_repeated_bool(bool val) {
     _msg->GetReflection()->SetRepeatedBool(_msg, _field_desc, _arr_idx, val);
+}
+
+void FieldRef::set_repeated_enum(int val) {
+    _msg->GetReflection()->SetRepeatedEnumValue(_msg, _field_desc, _arr_idx, val);
 }
 
 void FieldRef::set_repeated_string(const std::string &val) {
@@ -284,6 +296,10 @@ bool FieldRef::get_repeated_bool() const {
     return _msg->GetReflection()->GetRepeatedBool(*_msg, _field_desc, _arr_idx);
 }
 
+int FieldRef::get_repeated_enum() const {
+    return _msg->GetReflection()->GetRepeatedEnumValue(*_msg, _field_desc, _arr_idx);
+}
+
 std::string FieldRef::get_repeated_string() const {
     return _msg->GetReflection()->GetRepeatedString(*_msg, _field_desc, _arr_idx);
 }
@@ -318,6 +334,10 @@ void FieldRef::add_double(double val) {
 
 void FieldRef::add_bool(bool val) {
     _msg->GetReflection()->AddBool(_msg, _field_desc, val);
+}
+
+void FieldRef::add_enum(int val) {
+    _msg->GetReflection()->AddEnumValue(_msg, _field_desc, val);
 }
 
 void FieldRef::add_string(const std::string &val) {

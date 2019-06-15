@@ -92,6 +92,8 @@ private:
 
     void _set_bool(FieldRef &field, const StringView &sv) const;
 
+    void _set_enum(FieldRef &field, const StringView &sv) const;
+
     void _set_string(FieldRef &field, const StringView &sv) const;
 
     void _set_msg(FieldRef &field, const StringView &sv) const;
@@ -109,6 +111,8 @@ private:
     void _set_repeated_float(FieldRef &field, const StringView &sv) const;
 
     void _set_repeated_bool(FieldRef &field, const StringView &sv) const;
+
+    void _set_repeated_enum(FieldRef &field, const StringView &sv) const;
 
     void _set_repeated_string(FieldRef &field, const StringView &sv) const;
 

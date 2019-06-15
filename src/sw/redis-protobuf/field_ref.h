@@ -100,6 +100,7 @@ public:
     void set_float(float val);
     void set_double(double val);
     void set_bool(bool val);
+    void set_enum(int val);
     void set_string(const std::string &val);
     void set_msg(gp::Message &msg);
 
@@ -110,6 +111,7 @@ public:
     float get_float() const;
     double get_double() const;
     bool get_bool() const;
+    int get_enum() const;
     std::string get_string() const;
     const gp::Message& get_msg() const;
 
@@ -120,6 +122,7 @@ public:
     void set_repeated_float(float val);
     void set_repeated_double(double val);
     void set_repeated_bool(bool val);
+    void set_repeated_enum(int val);
     void set_repeated_string(const std::string &val);
     void set_repeated_msg(gp::Message &msg);
 
@@ -130,6 +133,7 @@ public:
     float get_repeated_float() const;
     double get_repeated_double() const;
     bool get_repeated_bool() const;
+    int get_repeated_enum() const;
     std::string get_repeated_string() const;
     const gp::Message& get_repeated_msg() const;
 
@@ -140,6 +144,7 @@ public:
     void add_float(float val);
     void add_double(double val);
     void add_bool(bool val);
+    void add_enum(int val);
     void add_string(const std::string &val);
     void add_msg(gp::Message &msg);
 
