@@ -27,13 +27,13 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.GET key [path]
+// command: PB.GET key [--FORMAT BINARY|JSON] type|path
 // return:  If no path is specified, return the protobuf message of the key
 //          as a bulk string reply. If path is specified, return the value
 //          of the field specified with the path, and the reply type depends
 //          on the definition of the protobuf. If the key doesn't exist,
 //          return a nil reply.
-// error:   If the path doesn't exist, return an error reply.
+// error:   If the path doesn't exist, or type mismatch return an error reply.
 class GetCommand {
 public:
     int run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;
@@ -41,25 +41,44 @@ public:
 private:
     struct Args {
         RedisModuleString *key_name;
-        // TODO: We might support multiple paths in the future.
-        std::vector<Path> paths;
+        
+        enum class Format {
+            BINARY = 0,
+            JSON
+        };
+
+        Format format = Format::BINARY;
+
+        Path path;
     };
 
     Args _parse_args(RedisModuleString **argv, int argc) const;
+
+    int _parse_opts(RedisModuleString **argv, int argc, Args &args) const;
+
+    Args::Format _parse_format(const StringView &format) const;
 
     void _reply_with_nil(RedisModuleCtx *ctx) const;
 
     void _reply_with_msg(RedisModuleCtx *ctx,
             gp::Message &msg,
-            const std::vector<Path> &paths) const;
+            const Args &args) const;
 
-    void _get_scalar_field(RedisModuleCtx *ctx, const FieldRef &field) const;
+    void _get_scalar_field(RedisModuleCtx *ctx,
+            const FieldRef &field,
+            Args::Format format) const;
 
-    void _get_array_element(RedisModuleCtx *ctx, const FieldRef &field) const;
+    void _get_array_element(RedisModuleCtx *ctx,
+            const FieldRef &field,
+            Args::Format format) const;
 
-    void _get_msg(RedisModuleCtx *ctx, const gp::Message &msg) const;
+    void _get_msg(RedisModuleCtx *ctx,
+            const gp::Message &msg,
+            Args::Format format) const;
 
-    void _get_field(RedisModuleCtx *ctx, const FieldRef &field) const;
+    void _get_field(RedisModuleCtx *ctx,
+            const FieldRef &field,
+            Args::Format format) const;
 };
 
 }

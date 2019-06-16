@@ -39,7 +39,7 @@ int GetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
             auto *msg = api::get_msg_by_key(key.get());
             assert(msg != nullptr);
 
-            _reply_with_msg(ctx, *msg, args.paths);
+            _reply_with_msg(ctx, *msg, args);
         }
 
         return REDISMODULE_OK;
@@ -53,29 +53,83 @@ int GetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
 GetCommand::Args GetCommand::_parse_args(RedisModuleString **argv, int argc) const {
     assert(argv != nullptr);
 
-    if (argc != 2 && argc != 3) {
+    if (argc < 3) {
         throw WrongArityError();
     }
 
     Args args;
     args.key_name = argv[1];
 
-    // Get field.
-    if (argc == 3) {
-        args.paths.emplace_back(argv[2]);
+    auto pos = _parse_opts(argv, argc, args);
+    if (pos + 1 != argc) {
+        throw WrongArityError();
     }
+
+    args.path = Path(argv[pos]);
 
     return args;
 }
 
-void GetCommand::_get_msg(RedisModuleCtx *ctx, const gp::Message &msg) const {
-    auto json = util::msg_to_json(msg);
-    RedisModule_ReplyWithStringBuffer(ctx, json.data(), json.size());
+int GetCommand::_parse_opts(RedisModuleString **argv, int argc, Args &args) const {
+    auto idx = 2;
+    while (idx < argc) {
+        auto opt = StringView(argv[idx]);
+        if (util::str_case_equal(opt, "--FORMAT")) {
+            if (idx + 1 >= argc) {
+                throw Error("syntax error");
+            }
+
+            ++idx;
+
+            args.format = _parse_format(argv[idx]);
+        } else {
+            // Finish parsing options.
+            break;
+        }
+
+        ++idx;
+    }
+
+    return idx;
 }
 
-void GetCommand::_get_field(RedisModuleCtx *ctx, const FieldRef &field) const {
+GetCommand::Args::Format GetCommand::_parse_format(const StringView &format) const {
+    if (util::str_case_equal(format, "BINARY")) {
+        return Args::Format::BINARY;
+    } else if (util::str_case_equal(format, "JSON")) {
+        return Args::Format::JSON;
+    } else {
+        throw Error("unknown format");
+    }
+}
+
+void GetCommand::_get_msg(RedisModuleCtx *ctx,
+        const gp::Message &msg,
+        Args::Format format) const {
+    std::string result;
+    switch (format) {
+    case Args::Format::BINARY:
+        if (!msg.SerializeToString(&result)) {
+            throw Error("failed to serialize message to binary string");
+        }
+        break;
+
+    case Args::Format::JSON:
+        result = util::msg_to_json(msg);
+        break;
+
+    default:
+        assert(false);
+    }
+
+    RedisModule_ReplyWithStringBuffer(ctx, result.data(), result.size());
+}
+
+void GetCommand::_get_field(RedisModuleCtx *ctx,
+        const FieldRef &field,
+        Args::Format format) const {
     if (field.is_array_element()) {
-        return _get_array_element(ctx, field);
+        return _get_array_element(ctx, field, format);
     } else if (field.is_array()) {
         // TODO: 
         throw Error("cannot get array field");
@@ -84,10 +138,12 @@ void GetCommand::_get_field(RedisModuleCtx *ctx, const FieldRef &field) const {
         throw Error("cannot get map field");
     } // else non-aggregate type.
 
-    _get_scalar_field(ctx, field);
+    _get_scalar_field(ctx, field, format);
 }
 
-void GetCommand::_get_scalar_field(RedisModuleCtx *ctx, const FieldRef &field) const {
+void GetCommand::_get_scalar_field(RedisModuleCtx *ctx,
+        const FieldRef &field,
+        Args::Format format) const {
     switch (field.type()) {
     case gp::FieldDescriptor::CPPTYPE_INT32: {
         auto val = field.get_int32();
@@ -137,8 +193,7 @@ void GetCommand::_get_scalar_field(RedisModuleCtx *ctx, const FieldRef &field) c
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_MESSAGE: {
-        auto json = util::msg_to_json(field.get_msg());
-        RedisModule_ReplyWithStringBuffer(ctx, json.data(), json.size());
+        _get_msg(ctx, field.get_msg(), format);
         break;
     }
     default:
@@ -146,7 +201,9 @@ void GetCommand::_get_scalar_field(RedisModuleCtx *ctx, const FieldRef &field) c
     }
 }
 
-void GetCommand::_get_array_element(RedisModuleCtx *ctx, const FieldRef &field) const {
+void GetCommand::_get_array_element(RedisModuleCtx *ctx,
+        const FieldRef &field,
+        Args::Format format) const {
     switch (field.type()) {
     case gp::FieldDescriptor::CPPTYPE_INT32: {
         auto val = field.get_repeated_int32();
@@ -196,9 +253,7 @@ void GetCommand::_get_array_element(RedisModuleCtx *ctx, const FieldRef &field) 
         break;
     }
     case gp::FieldDescriptor::CPPTYPE_MESSAGE: {
-        const auto &msg = field.get_repeated_msg();
-        auto json = util::msg_to_json(msg);
-        RedisModule_ReplyWithStringBuffer(ctx, json.data(), json.size());
+        _get_msg(ctx, field.get_repeated_msg(), format);
         break;
     }
     default:
@@ -212,23 +267,19 @@ void GetCommand::_reply_with_nil(RedisModuleCtx *ctx) const {
 
 void GetCommand::_reply_with_msg(RedisModuleCtx *ctx,
         gp::Message &msg,
-        const std::vector<Path> &paths) const {
-    if (paths.empty()) {
-        // Get the whole message.
-        return _get_msg(ctx, msg);
-    }
-
-    // Get field.
-    const auto &path = paths.front();
+        const Args &args) const {
+    const auto &path = args.path;
     if (msg.GetTypeName() != path.type()) {
-        throw Error("type missmatch");
+        throw Error("type mismatch");
     }
 
     if (path.empty()) {
-        return _get_msg(ctx, msg);
+        // Get the whole message.
+        return _get_msg(ctx, msg, args.format);
     }
 
-    _get_field(ctx, FieldRef(&msg, path));
+    // Get field.
+    _get_field(ctx, FieldRef(&msg, path), args.format);
 }
 
 }
