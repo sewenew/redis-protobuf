@@ -28,7 +28,7 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.MERGE key type|path value
+// command: PB.MERGE key path value
 // return:  Integer reply: If the key exists, return 1. Otherwise, return 0.
 //          If key doesn't exist, this command behaves as PB.SET.
 // error:   If the type doesn't match the protobuf message type of the key,
@@ -40,8 +40,7 @@ public:
 private:
     struct Args {
         RedisModuleString *key_name;
-        // TODO: merge mulitple fields?
-        std::vector<Path> paths;
+        Path path;
         StringView val;
     };
 

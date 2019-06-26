@@ -28,7 +28,7 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.CLEAR key [path]
+// command: PB.CLEAR key path
 // return:  Integer reply: If the key exist, return 1. Otherwise, return 0.
 // error:   If the type doesn't match the protobuf message type of the key,
 //          or the path doesn't exist, return an error reply.
@@ -39,13 +39,12 @@ public:
 private:
     struct Args {
         RedisModuleString *key_name;
-        // TODO: clear mulitple fields.
-        std::vector<Path> paths;
+        Path path;
     };
 
     Args _parse_args(RedisModuleString **argv, int argc) const;
 
-    void _clear(gp::Message &msg, const std::vector<Path> &paths) const;
+    void _clear(gp::Message &msg, const Path &path) const;
 };
 
 }

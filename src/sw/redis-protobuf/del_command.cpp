@@ -36,15 +36,20 @@ int DelCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
         if (!api::key_exists(key.get(), RedisProtobuf::instance().type())) {
             RedisModule_ReplyWithLongLong(ctx, 0);
         } else {
-            if (args.paths.empty()) {
+            auto *msg = api::get_msg_by_key(key.get());
+            assert(msg != nullptr);
+
+            const auto &path = args.path;
+            if (msg->GetTypeName() != path.type()) {
+                throw Error("type mismatch");
+            }
+
+            if (path.empty()) {
                 // Delete key.
                 RedisModule_DeleteKey(key.get());
             } else {
                 // Delete an item from array or map.
-                auto *msg = api::get_msg_by_key(key.get());
-                assert(msg != nullptr);
-
-                _del(*msg, args.paths.front());
+                _del(*msg, path);
             }
 
             RedisModule_ReplyWithLongLong(ctx, 1);
@@ -63,18 +68,11 @@ int DelCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
 DelCommand::Args DelCommand::_parse_args(RedisModuleString **argv, int argc) const {
     assert(argv != nullptr);
 
-    if (argc != 2 && argc != 3) {
+    if (argc != 3) {
         throw WrongArityError();
     }
 
-    Args args;
-    args.key_name = argv[1];
-
-    if (argc == 3) {
-        args.paths.emplace_back(argv[2]);
-    }
-
-    return args;
+    return {argv[1], Path(argv[2])};
 }
 
 void DelCommand::_del(gp::Message &msg, const Path &path) const {

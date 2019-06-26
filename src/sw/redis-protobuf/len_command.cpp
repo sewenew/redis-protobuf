@@ -39,7 +39,7 @@ int LenCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
             auto *msg = api::get_msg_by_key(key.get());
             assert(msg != nullptr);
 
-            auto len = _len(*msg, args.paths);
+            auto len = _len(*msg, args.path);
             RedisModule_ReplyWithLongLong(ctx, len);
         }
 
@@ -54,28 +54,14 @@ int LenCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
 LenCommand::Args LenCommand::_parse_args(RedisModuleString **argv, int argc) const {
     assert(argv != nullptr);
 
-    if (argc != 2 && argc != 3) {
+    if (argc != 3) {
         throw WrongArityError();
     }
 
-    Args args;
-    args.key_name = argv[1];
-
-    // Get field.
-    if (argc == 3) {
-        args.paths.emplace_back(argv[2]);
-    }
-
-    return args;
+    return {argv[1], Path(argv[2])};
 }
 
-long long LenCommand::_len(gp::Message &msg, const std::vector<Path> &paths) const {
-    if (paths.empty()) {
-        // Return the length of the message.
-        return msg.ByteSizeLong();
-    }
-
-    const auto &path = paths.front();
+long long LenCommand::_len(gp::Message &msg, const Path &path) const {
     if (msg.GetTypeName() != path.type()) {
         throw Error("type mismatch");
     }

@@ -27,7 +27,7 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.GET key [--FORMAT BINARY|JSON] type|path
+// command: PB.GET key [--FORMAT BINARY|JSON] path
 // return:  If no path is specified, return the protobuf message of the key
 //          as a bulk string reply. If path is specified, return the value
 //          of the field specified with the path, and the reply type depends

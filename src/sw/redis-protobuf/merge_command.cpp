@@ -61,18 +61,11 @@ MergeCommand::Args MergeCommand::_parse_args(RedisModuleString **argv, int argc)
         throw WrongArityError();
     }
 
-    Args args;
-    args.key_name = argv[1];
-    args.paths.emplace_back(argv[2]);
-    args.val = argv[3];
-
-    return args;
+    return {argv[1], Path(argv[2]), StringView(argv[3])};
 }
 
 void MergeCommand::_merge(const Args &args, gp::Message &msg) const {
-    assert(!args.paths.empty());
-
-    const auto &path = args.paths.front();
+    const auto &path = args.path;
     if (path.empty()) {
         _merge_msg(path.type(), args.val, msg);
     } else {

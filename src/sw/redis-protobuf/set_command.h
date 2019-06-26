@@ -30,7 +30,7 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.SET key [--NX|--XX] [--EX seconds | --PX milliseconds] type|path value
+// command: PB.SET key [--NX|--XX] [--EX seconds | --PX milliseconds] path value
 // return:  Integer reply: 1 if set successfully. 0, otherwise, e.g. option --NX has
 //          been set, while key already exists.
 // error:   If the type doesn't match the protobuf message type of the

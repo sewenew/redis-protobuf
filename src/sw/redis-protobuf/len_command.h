@@ -27,16 +27,14 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.LEN key [path]
-// return:  Integer reply: If no path is specified, return the length of the
-//          protobuf message in bytes, i.e. Message::ByteSizeLong. If path is
-//          specified, and the corresponding field is a string, return the 
+// command: PB.LEN key path
+// return:  Integer reply: If the specified path is a string, return the 
 //          length of the string in bytes; if the field is an array or a map,
 //          return the size of the array or map. If the field is a message,
-//          return the size of the message in bytes. If the key doesn't exist,
-//          return 0.
+//          return the size of the message in bytes, i.e. Message::ByteSizeLong.
+//          If the key doesn't exist, return 0.
 // error:   If the path doesn't exist, or the corresponding field is not a
-//          string or an array or a map, return an error reply.
+//          message or a string or an array or a map, return an error reply.
 class LenCommand {
 public:
     int run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;
@@ -44,13 +42,12 @@ public:
 private:
     struct Args {
         RedisModuleString *key_name;
-        // TODO: We might support multiple paths in the future.
-        std::vector<Path> paths;
+        Path path;
     };
 
     Args _parse_args(RedisModuleString **argv, int argc) const;
 
-    long long _len(gp::Message &msg, const std::vector<Path> &paths) const;
+    long long _len(gp::Message &msg, const Path &path) const;
 
     long long _len(const FieldRef &field) const;
 };

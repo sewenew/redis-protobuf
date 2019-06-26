@@ -29,11 +29,10 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.DEL key [path]
-// return:  Integer reply: return 1, if the item exists. If the key doesn't
-//          exist, return 0.
+// command: PB.DEL key path
+// return:  Integer reply: return 1, if the key exists. 0, otherwise.
 // error:   If the path doesn't exist, or the corresponding field is not an array,
-//          or map, return an error reply.
+//          or map or the message itself, return an error reply.
 class DelCommand {
 public:
     int run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;
@@ -41,7 +40,7 @@ public:
 private:
     struct Args {
         RedisModuleString *key_name;
-        std::vector<Path> paths;
+        Path path;
     };
 
     Args _parse_args(RedisModuleString **argv, int argc) const;

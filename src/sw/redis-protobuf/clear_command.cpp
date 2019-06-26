@@ -37,7 +37,7 @@ int ClearCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) c
             auto *msg = api::get_msg_by_key(key.get());
             assert(msg != nullptr);
 
-            _clear(*msg, args.paths);
+            _clear(*msg, args.path);
 
             RedisModule_ReplyWithLongLong(ctx, 1);
         }
@@ -55,27 +55,20 @@ int ClearCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) c
 ClearCommand::Args ClearCommand::_parse_args(RedisModuleString **argv, int argc) const {
     assert(argv != nullptr);
 
-    if (argc != 2 && argc != 3) {
+    if (argc != 3) {
         throw WrongArityError();
     }
 
-    Args args;
-    args.key_name = argv[1];
-
-    if (argc == 3) {
-        args.paths.emplace_back(argv[2]);
-    }
-
-    return args;
+    return {argv[1], Path(argv[2])};
 }
 
-void ClearCommand::_clear(gp::Message &msg, const std::vector<Path> &paths) const {
-    if (paths.empty()) {
+void ClearCommand::_clear(gp::Message &msg, const Path &path) const {
+    if (path.empty()) {
         // Clear the message.
         msg.Clear();
     } else {
         // Clear a field.
-        FieldRef field(&msg, paths.front());
+        FieldRef field(&msg, path);
         field.clear();
     }
 }
