@@ -15,10 +15,10 @@
  *************************************************************************/
 
 #include "options.h"
-#include <unistd.h>
 #include <vector>
 #include "redis_protobuf.h"
 #include "errors.h"
+#include "utils.h"
 
 namespace sw {
 
@@ -27,34 +27,29 @@ namespace redis {
 namespace pb {
 
 void Options::load(RedisModuleString **argv, int argc) {
-    std::vector<char*> argvs;
-    argvs.reserve(argc + 1);
-    // Add a fake module name explicitly, so that we can use getopt to parse arguments.
-    std::string module_name;
-    argvs.push_back(const_cast<char*>(module_name.data()));
-    for (auto idx = 0; idx != argc; ++idx) {
-        argvs.push_back(const_cast<char*>(RedisModule_StringPtrLen(argv[idx], nullptr)));
-    }
-
     Options opts;
-    int opt = 0;
-    while ((opt = getopt(argc + 1, argvs.data(), "d:")) != -1) {
-        try {
-            switch (opt) {
-            case 'd':
-                opts.proto_dir = optarg;
-                break;
 
-            default:
-                throw Error("Unknown command line option");
+    auto idx = 0;
+    while (idx < argc) {
+        auto opt = StringView(argv[idx]);
+
+        if (util::str_case_equal(opt, "--DIR")) {
+            if (!opts.proto_dir.empty()) {
+                throw Error("duplicate --DIR option");
             }
-        } catch (const Error &e) {
-            throw;
+
+            ++idx;
+
+            opts.proto_dir = util::sv_to_string(StringView(argv[idx]));
+        } else {
+            throw Error("unknown option: " + util::sv_to_string(opt));
         }
+
+        ++idx;
     }
 
     if (opts.proto_dir.empty()) {
-        throw Error("proto directory is not specified with -p option");
+        throw Error("option '--DIR dir' is required");
     }
 
     *this = std::move(opts);
