@@ -58,7 +58,7 @@ public:
     }
 
 private:
-    std::string _parse_type(const char *ptr, std::size_t len);
+    std::pair<std::string, std::size_t> _parse_type(const char *ptr, std::size_t len);
 
     std::vector<std::string> _parse_fields(const char *ptr, std::size_t len);
 

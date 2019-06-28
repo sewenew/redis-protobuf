@@ -40,6 +40,8 @@ private:
     };
 
     Args _parse_args(RedisModuleString **argv, int argc) const;
+
+    std::string _format(const std::string &schema) const;
 };
 
 }

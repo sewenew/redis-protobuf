@@ -30,15 +30,16 @@ Path::Path(const StringView &str) {
 
     auto len = str.size();
 
-    _type = _parse_type(ptr, len);
+    std::size_t type_len = 0;
+    std::tie(_type, type_len) = _parse_type(ptr, len);
 
-    if (_type.size() < len) {
+    if (type_len < len) {
         // Has fields.
-        _fields = _parse_fields(ptr + _type.size(), len - _type.size());
+        _fields = _parse_fields(ptr + type_len, len - type_len);
     }
 }
 
-std::string Path::_parse_type(const char *ptr, std::size_t len) {
+std::pair<std::string, std::size_t> Path::_parse_type(const char *ptr, std::size_t len) {
     assert(ptr != nullptr);
 
     if (len == 0) {
@@ -47,13 +48,25 @@ std::string Path::_parse_type(const char *ptr, std::size_t len) {
 
     std::size_t idx = 0;
     for (; idx != len; ++idx) {
-        // e.g. type.field1.field2
+        // e.g. name::space::type.field1.field2
         if (ptr[idx] == '.') {
             break;
         }
     }
 
-    return std::string(ptr, idx);
+    // name::space::type => name.space.type
+    std::string type;
+    type.reserve(idx);
+    for (std::size_t i = 0; i != idx; ++i) {
+        auto ch = ptr[i];
+        if (ch != ':') {
+            type.push_back(ch);
+        } else if (!type.empty() && type.back() != '.') {
+            type.push_back('.');
+        } // else discard duplicate ':'
+    }
+
+    return {std::move(type), idx};
 }
 
 std::vector<std::string> Path::_parse_fields(const char *ptr, std::size_t len) {

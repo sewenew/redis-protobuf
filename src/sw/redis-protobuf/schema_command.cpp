@@ -17,6 +17,7 @@
 #include "schema_command.h"
 #include "errors.h"
 #include "redis_protobuf.h"
+#include "field_ref.h"
 
 namespace sw {
 
@@ -35,7 +36,8 @@ int SchemaCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         if (desc == nullptr) {
             RedisModule_ReplyWithNull(ctx);
         } else {
-            auto schema = desc->DebugString();
+            auto schema = _format(desc->DebugString());
+
             RedisModule_ReplyWithStringBuffer(ctx, schema.data(), schema.size());
         }
 
@@ -56,9 +58,30 @@ SchemaCommand::Args SchemaCommand::_parse_args(RedisModuleString **argv, int arg
         throw WrongArityError();
     }
 
-    auto type = StringView(argv[1]);
+    return {Path(argv[1]).type()};
+}
 
-    return {std::string(type.data(), type.size())};
+std::string SchemaCommand::_format(const std::string &schema) const {
+    std::string formated_schema;
+    formated_schema.reserve(schema.size() * 2);
+
+    for (auto ch : schema) {
+        if (ch != '.') {
+            formated_schema.push_back(ch);
+        } else {
+            if (formated_schema.empty()) {
+                // This should not happen.
+                throw Error("invalid schema");
+            }
+            
+            if (formated_schema.back() != ' ') {
+                // '.' => '::'
+                formated_schema.append("::");
+            } // else discard leading '.'
+        }
+    }
+
+    return formated_schema;
 }
 
 }

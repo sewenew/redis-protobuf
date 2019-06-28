@@ -31,17 +31,17 @@ int TypeCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) co
 
         auto args = _parse_args(argv, argc);
 
-        auto &module = RedisProtobuf::instance();
-
         auto key = api::open_key(ctx, args.key_name, api::KeyMode::READONLY);
-        if (!api::key_exists(key.get(), module.type())) {
+        if (!api::key_exists(key.get(), RedisProtobuf::instance().type())) {
             return RedisModule_ReplyWithNull(ctx);
         }
 
         auto *msg = api::get_msg_by_key(key.get());
         assert(msg != nullptr);
 
-        return RedisModule_ReplyWithSimpleString(ctx, msg->GetTypeName().data());
+        auto type = _format_type(msg->GetTypeName());
+
+        return RedisModule_ReplyWithSimpleString(ctx, type.data());
     } catch (const WrongArityError &err) {
         return RedisModule_WrongArity(ctx);
     } catch (const Error &err) {
@@ -57,6 +57,30 @@ TypeCommand::Args TypeCommand::_parse_args(RedisModuleString **argv, int argc) c
     }
 
     return Args{argv[1]};
+}
+
+std::string TypeCommand::_format_type(std::string type) const {
+    auto pos = type.find('.');
+    if (pos == std::string::npos) {
+        // No namespace.
+        return type;
+    }
+
+    std::string type_str;
+    type_str.reserve(type.size() * 2);
+
+    type_str = type.substr(0, pos);
+
+    for (std::size_t idx = pos; idx != type.size(); ++idx) {
+        auto ch = type[idx];
+        if (ch != '.') {
+            type_str.push_back(ch);
+        } else {
+            type_str.append("::");
+        }
+    }
+
+    return type_str;
 }
 
 }
