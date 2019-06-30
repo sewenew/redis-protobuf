@@ -76,7 +76,7 @@ DelCommand::Args DelCommand::_parse_args(RedisModuleString **argv, int argc) con
 }
 
 void DelCommand::_del(gp::Message &msg, const Path &path) const {
-    FieldRef field(&msg, path);
+    MutableFieldRef field(&msg, path);
 
     if (!field.is_array_element()) {
         // TODO: support map element

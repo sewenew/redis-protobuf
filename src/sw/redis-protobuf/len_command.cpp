@@ -71,10 +71,10 @@ long long LenCommand::_len(gp::Message &msg, const Path &path) const {
         return msg.ByteSizeLong();
     }
 
-    return _len(FieldRef(&msg, path));
+    return _len(ConstFieldRef(&msg, path));
 }
 
-long long LenCommand::_len(const FieldRef &field) const {
+long long LenCommand::_len(const ConstFieldRef &field) const {
     if (field.is_array()) {
         return field.array_size();
     }

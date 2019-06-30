@@ -154,7 +154,7 @@ void SetCommand::_create_msg(RedisModuleKey &key,
         msg = module.proto_factory()->create(path.type(), val);
     } else {
         msg = module.proto_factory()->create(path.type());
-        FieldRef field(msg.get(), path);
+        MutableFieldRef field(msg.get(), path);
         _set_field(field, val);
     }
 
@@ -186,12 +186,12 @@ void SetCommand::_set_msg(RedisModuleKey &key,
         msg.release();
     } else {
         // Set field.
-        FieldRef field(msg, path);
+        MutableFieldRef field(msg, path);
         _set_field(field, val);
     }
 }
 
-void SetCommand::_set_field(FieldRef &field, const StringView &val) const {
+void SetCommand::_set_field(MutableFieldRef &field, const StringView &val) const {
     if (field.is_array_element()) {
         return _set_array_element(field, val);
     } else if (field.is_array()) {
@@ -205,7 +205,7 @@ void SetCommand::_set_field(FieldRef &field, const StringView &val) const {
     _set_scalar_field(field, val);
 }
 
-void SetCommand::_set_scalar_field(FieldRef &field, const StringView &val) const {
+void SetCommand::_set_scalar_field(MutableFieldRef &field, const StringView &val) const {
     switch (field.type()) {
     case gp::FieldDescriptor::CPPTYPE_INT32:
         _set_int32(field, val);
@@ -252,7 +252,7 @@ void SetCommand::_set_scalar_field(FieldRef &field, const StringView &val) const
     }
 }
 
-void SetCommand::_set_array_element(FieldRef &field, const StringView &val) const {
+void SetCommand::_set_array_element(MutableFieldRef &field, const StringView &val) const {
     switch (field.type()) {
     case gp::FieldDescriptor::CPPTYPE_INT32:
         _set_repeated_int32(field, val);
@@ -299,69 +299,69 @@ void SetCommand::_set_array_element(FieldRef &field, const StringView &val) cons
     }
 }
 
-void SetCommand::_set_int32(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_int32(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_INT32);
 
     auto val = util::sv_to_int32(sv);
     field.set_int32(val);
 }
 
-void SetCommand::_set_int64(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_int64(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_INT64);
 
     auto val = util::sv_to_int64(sv);
     field.set_int64(val);
 }
 
-void SetCommand::_set_uint32(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_uint32(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT32);
 
     auto val = util::sv_to_uint32(sv);
     field.set_uint32(val);
 }
 
-void SetCommand::_set_uint64(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_uint64(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT64);
 
     auto val = util::sv_to_uint64(sv);
     field.set_uint64(val);
 }
 
-void SetCommand::_set_double(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_double(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_DOUBLE);
 
     auto val = util::sv_to_double(sv);
     field.set_double(val);
 }
 
-void SetCommand::_set_float(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_float(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_FLOAT);
 
     auto val = util::sv_to_float(sv);
     field.set_float(val);
 }
 
-void SetCommand::_set_bool(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_bool(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_BOOL);
 
     auto val = util::sv_to_bool(sv);
     field.set_bool(val);
 }
 
-void SetCommand::_set_enum(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_enum(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_ENUM);
 
     auto val = util::sv_to_int32(sv);
     field.set_enum(val);
 }
 
-void SetCommand::_set_string(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_string(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_STRING);
 
     field.set_string(util::sv_to_string(sv));
 }
 
-void SetCommand::_set_msg(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_msg(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_MESSAGE);
 
     auto new_msg = RedisProtobuf::instance().proto_factory()->create(field.msg_type(), sv);
@@ -370,69 +370,69 @@ void SetCommand::_set_msg(FieldRef &field, const StringView &sv) const {
     field.set_msg(*new_msg);
 }
 
-void SetCommand::_set_repeated_int32(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_repeated_int32(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_INT32);
 
     auto val = util::sv_to_int32(sv);
     field.set_repeated_int32(val);
 }
 
-void SetCommand::_set_repeated_int64(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_repeated_int64(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_INT64);
 
     auto val = util::sv_to_int64(sv);
     field.set_repeated_int64(val);
 }
 
-void SetCommand::_set_repeated_uint32(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_repeated_uint32(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT32);
 
     auto val = util::sv_to_uint32(sv);
     field.set_repeated_uint32(val);
 }
 
-void SetCommand::_set_repeated_uint64(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_repeated_uint64(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT64);
 
     auto val = util::sv_to_uint64(sv);
     field.set_uint64(val);
 }
 
-void SetCommand::_set_repeated_double(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_repeated_double(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_DOUBLE);
 
     auto val = util::sv_to_double(sv);
     field.set_double(val);
 }
 
-void SetCommand::_set_repeated_float(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_repeated_float(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_FLOAT);
 
     auto val = util::sv_to_float(sv);
     field.set_float(val);
 }
 
-void SetCommand::_set_repeated_bool(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_repeated_bool(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_BOOL);
 
     auto val = util::sv_to_bool(sv);
     field.set_repeated_bool(val);
 }
 
-void SetCommand::_set_repeated_enum(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_repeated_enum(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_ENUM);
 
     auto val = util::sv_to_int32(sv);
     field.set_repeated_enum(val);
 }
 
-void SetCommand::_set_repeated_string(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_repeated_string(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_STRING);
 
     field.set_repeated_string(util::sv_to_string(sv));
 }
 
-void SetCommand::_set_repeated_msg(FieldRef &field, const StringView &sv) const {
+void SetCommand::_set_repeated_msg(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_MESSAGE);
 
     auto new_msg = RedisProtobuf::instance().proto_factory()->create(field.msg_type(), sv);

@@ -47,13 +47,13 @@ private:
 
     Args _parse_args(RedisModuleString **argv, int argc) const;
 
-    long long _append(FieldRef &field, const std::vector<StringView> &elements) const;
+    long long _append(MutableFieldRef &field, const std::vector<StringView> &elements) const;
 
-    void _append_arr(FieldRef &field, const StringView &val) const;
+    void _append_arr(MutableFieldRef &field, const StringView &val) const;
 
-    long long _append_str(FieldRef &field, const std::vector<StringView> &elements) const;
+    long long _append_str(MutableFieldRef &field, const std::vector<StringView> &elements) const;
 
-    void _add_msg(FieldRef &field, const StringView &val) const;
+    void _add_msg(MutableFieldRef &field, const StringView &val) const;
 };
 
 }

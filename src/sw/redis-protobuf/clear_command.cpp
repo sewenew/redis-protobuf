@@ -68,7 +68,7 @@ void ClearCommand::_clear(gp::Message &msg, const Path &path) const {
         msg.Clear();
     } else {
         // Clear a field.
-        FieldRef field(&msg, path);
+        MutableFieldRef field(&msg, path);
         field.clear();
     }
 }

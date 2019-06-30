@@ -49,7 +49,7 @@ private:
 
     long long _len(gp::Message &msg, const Path &path) const;
 
-    long long _len(const FieldRef &field) const;
+    long long _len(const ConstFieldRef &field) const;
 };
 
 }

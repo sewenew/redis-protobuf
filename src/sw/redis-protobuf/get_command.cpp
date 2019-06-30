@@ -126,7 +126,7 @@ void GetCommand::_get_msg(RedisModuleCtx *ctx,
 }
 
 void GetCommand::_get_field(RedisModuleCtx *ctx,
-        const FieldRef &field,
+        const ConstFieldRef &field,
         Args::Format format) const {
     if (field.is_array_element()) {
         return _get_array_element(ctx, field, format);
@@ -142,7 +142,7 @@ void GetCommand::_get_field(RedisModuleCtx *ctx,
 }
 
 void GetCommand::_get_scalar_field(RedisModuleCtx *ctx,
-        const FieldRef &field,
+        const ConstFieldRef &field,
         Args::Format format) const {
     switch (field.type()) {
     case gp::FieldDescriptor::CPPTYPE_INT32: {
@@ -202,7 +202,7 @@ void GetCommand::_get_scalar_field(RedisModuleCtx *ctx,
 }
 
 void GetCommand::_get_array_element(RedisModuleCtx *ctx,
-        const FieldRef &field,
+        const ConstFieldRef &field,
         Args::Format format) const {
     switch (field.type()) {
     case gp::FieldDescriptor::CPPTYPE_INT32: {
@@ -279,7 +279,7 @@ void GetCommand::_reply_with_msg(RedisModuleCtx *ctx,
     }
 
     // Get field.
-    _get_field(ctx, FieldRef(&msg, path), args.format);
+    _get_field(ctx, ConstFieldRef(&msg, path), args.format);
 }
 
 }

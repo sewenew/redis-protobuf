@@ -72,51 +72,51 @@ private:
             const Path &path,
             const StringView &val) const;
 
-    void _set_scalar_field(FieldRef &field, const StringView &val) const;
+    void _set_scalar_field(MutableFieldRef &field, const StringView &val) const;
 
-    void _set_array_element(FieldRef &field, const StringView &val) const;
+    void _set_array_element(MutableFieldRef &field, const StringView &val) const;
 
-    void _set_field(FieldRef &field, const StringView &sv) const;
+    void _set_field(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_int32(FieldRef &field, const StringView &sv) const;
+    void _set_int32(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_int64(FieldRef &field, const StringView &sv) const;
+    void _set_int64(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_uint32(FieldRef &field, const StringView &sv) const;
+    void _set_uint32(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_uint64(FieldRef &field, const StringView &sv) const;
+    void _set_uint64(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_double(FieldRef &field, const StringView &sv) const;
+    void _set_double(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_float(FieldRef &field, const StringView &sv) const;
+    void _set_float(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_bool(FieldRef &field, const StringView &sv) const;
+    void _set_bool(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_enum(FieldRef &field, const StringView &sv) const;
+    void _set_enum(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_string(FieldRef &field, const StringView &sv) const;
+    void _set_string(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_msg(FieldRef &field, const StringView &sv) const;
+    void _set_msg(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_repeated_int32(FieldRef &field, const StringView &sv) const;
+    void _set_repeated_int32(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_repeated_int64(FieldRef &field, const StringView &sv) const;
+    void _set_repeated_int64(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_repeated_uint32(FieldRef &field, const StringView &sv) const;
+    void _set_repeated_uint32(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_repeated_uint64(FieldRef &field, const StringView &sv) const;
+    void _set_repeated_uint64(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_repeated_double(FieldRef &field, const StringView &sv) const;
+    void _set_repeated_double(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_repeated_float(FieldRef &field, const StringView &sv) const;
+    void _set_repeated_float(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_repeated_bool(FieldRef &field, const StringView &sv) const;
+    void _set_repeated_bool(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_repeated_enum(FieldRef &field, const StringView &sv) const;
+    void _set_repeated_enum(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_repeated_string(FieldRef &field, const StringView &sv) const;
+    void _set_repeated_string(MutableFieldRef &field, const StringView &sv) const;
 
-    void _set_repeated_msg(FieldRef &field, const StringView &sv) const;
+    void _set_repeated_msg(MutableFieldRef &field, const StringView &sv) const;
 };
 
 }

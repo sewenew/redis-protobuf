@@ -65,11 +65,11 @@ private:
             const Args &args) const;
 
     void _get_scalar_field(RedisModuleCtx *ctx,
-            const FieldRef &field,
+            const ConstFieldRef &field,
             Args::Format format) const;
 
     void _get_array_element(RedisModuleCtx *ctx,
-            const FieldRef &field,
+            const ConstFieldRef &field,
             Args::Format format) const;
 
     void _get_msg(RedisModuleCtx *ctx,
@@ -77,7 +77,7 @@ private:
             Args::Format format) const;
 
     void _get_field(RedisModuleCtx *ctx,
-            const FieldRef &field,
+            const ConstFieldRef &field,
             Args::Format format) const;
 };
 

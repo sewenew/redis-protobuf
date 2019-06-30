@@ -89,7 +89,7 @@ void MergeCommand::_merge_msg(const std::string &type,
 void MergeCommand::_merge_sub_msg(const Path &path,
         const StringView &val,
         gp::Message &msg) const {
-    FieldRef field(&msg, path);
+    MutableFieldRef field(&msg, path);
     auto sub_msg = RedisProtobuf::instance().proto_factory()->create(field.msg_type(), val);
     assert(sub_msg);
 

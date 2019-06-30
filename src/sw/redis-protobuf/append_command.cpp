@@ -39,7 +39,7 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         long long len = 0;
         if (!api::key_exists(key.get(), module.type())) {
             auto msg = module.proto_factory()->create(path.type());
-            FieldRef field(msg.get(), path);
+            MutableFieldRef field(msg.get(), path);
             len = _append(field, args.elements);
 
             if (RedisModule_ModuleTypeSetValue(key.get(),
@@ -57,7 +57,7 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
                 throw Error("can only call append on array");
             }
 
-            FieldRef field(msg, path);
+            MutableFieldRef field(msg, path);
             // TODO: create a new message, and append to that message, then swap to this message.
             len = _append(field, args.elements);
         }
@@ -91,7 +91,7 @@ AppendCommand::Args AppendCommand::_parse_args(RedisModuleString **argv, int arg
     return args;
 }
 
-long long AppendCommand::_append(FieldRef &field,
+long long AppendCommand::_append(MutableFieldRef &field,
         const std::vector<StringView> &elements) const {
     if (field.is_array() && !field.is_array_element()) {
         for (const auto &ele : elements) {
@@ -106,7 +106,7 @@ long long AppendCommand::_append(FieldRef &field,
     }
 }
 
-void AppendCommand::_append_arr(FieldRef &field, const StringView &val) const {
+void AppendCommand::_append_arr(MutableFieldRef &field, const StringView &val) const {
     assert(field.is_array() && !field.is_array_element());
 
     switch (field.type()) {
@@ -155,7 +155,7 @@ void AppendCommand::_append_arr(FieldRef &field, const StringView &val) const {
     }
 }
 
-long long AppendCommand::_append_str(FieldRef &field,
+long long AppendCommand::_append_str(MutableFieldRef &field,
         const std::vector<StringView> &elements) const {
     std::string str;
     for (const auto &ele : elements) {
@@ -174,7 +174,7 @@ long long AppendCommand::_append_str(FieldRef &field,
     return str.size();
 }
 
-void AppendCommand::_add_msg(FieldRef &field, const StringView &val) const {
+void AppendCommand::_add_msg(MutableFieldRef &field, const StringView &val) const {
     auto msg = RedisProtobuf::instance().proto_factory()->create(field.msg_type(), val);
     assert(msg);
 
