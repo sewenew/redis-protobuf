@@ -356,6 +356,9 @@ void FieldRef<Msg>::_parse_aggregate_field(const std::string &field) {
     auto key = field.substr(pos + 1, field.size() - pos - 2);
 
     _field_desc = _msg->GetDescriptor()->FindFieldByName(name);
+    if (_field_desc == nullptr) {
+        throw Error("invalid field: " + name);
+    }
 
     if (_field_desc->is_repeated()) {
         try {
