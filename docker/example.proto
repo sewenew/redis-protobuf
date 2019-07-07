@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message SubMsg {
+    string s = 1;
+    int32 i = 2;
+}
+
+message Msg {
+    int32 i = 1;
+    SubMsg m = 2;
+    repeated int32 a = 3;
+    repeated SubMsg ms = 4;
+}
