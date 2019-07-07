@@ -99,6 +99,10 @@ If Redis loads the module successfully, you can get the following message from t
 Module 'PB' loaded from /path/to/libredis-protobuf.so
 ```
 
+**NOTE**: If any of the given *.proto* file is invalid, Redis fails to load the module.
+
+#### redis-protobuf Options
+
 ## Getting Started
 
 After [loading the module](#load-redis-protobuf), you can use any Redis client to send *redis-protobuf* [commands](#Commands).
@@ -268,6 +272,8 @@ If you are using Python, you can use [redis-py](https://github.com/andymccurdy/r
 
 Most commands have a *path* argument, which specifies the message type or field. *path* is consist of package name (optional), message type (required), field name (optional), array index (optional) and map key (optional). I'll use the following *.proto* file as an example to show you how to specify a *path*.
 
+**NOTE**: *path* IS CASE SENSITIVE.
+
 ```
 syntax = "proto3";
 
@@ -394,6 +400,8 @@ PB.GET key [--FORMAT BINARY|JSON] path
 - If *path* specifies a field, return the value of that field.
 - If *path* specifies a message type, return the whole message in *key*.
 
+**NOTE**: Even if you want to get the whole Protobuf message, you need to specify the *path* as the type of the message. If type mismatches, you'll get an error reply.
+
 #### Options
 
 - **--FORMAT**: If the field at *path* is of message type, this option specifies the format of the return value. If the field is of other types, this option is ignored.
@@ -430,6 +438,10 @@ Return an error reply in the following cases:
 "{\"s\":\"redis-protobuf\",\"i\":2}"
 127.0.0.1:6379> PB.GET key Msg.arr[0]
 (integer) 2
+127.0.0.1:6379> PB.GET key Msg.arr
+1) (integer) 1
+2) (integer) 2
+3) (integer) 3
 ```
 
 ### PB.DEL
@@ -446,7 +458,7 @@ PB.DEL key path
 
 #### Return Value
 
-Integer reply: 0, if *key* doesn't exist. 1, othewise.
+Integer reply: 1 if *key* exists, 0 othewise.
 
 #### Error
 
@@ -584,7 +596,6 @@ Please check the Protubuf doc for the definition of **merge**.
 
 #### Return Value
 
-// TODO: I need to reconsider the return value of this command.
 Integer reply: 1 if the *key* exists, 0 otherwise.
 
 #### Error
