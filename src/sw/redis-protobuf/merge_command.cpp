@@ -36,7 +36,9 @@ int MergeCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) c
         auto key = api::open_key(ctx, args.key_name, api::KeyMode::WRITEONLY);
         if (!api::key_exists(key.get(), RedisProtobuf::instance().type())) {
             SetCommand set_cmd;
-            return set_cmd.run(ctx, argv, argc);
+            set_cmd._run(ctx, argv, argc);
+
+            return RedisModule_ReplyWithLongLong(ctx, 0);
         }
 
         auto *msg = api::get_msg_by_key(key.get());
@@ -44,7 +46,7 @@ int MergeCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) c
 
         _merge(args, *msg);
 
-        return RedisModule_ReplyWithLongLong(ctx, 0);
+        return RedisModule_ReplyWithLongLong(ctx, 1);
     } catch (const WrongArityError &err) {
         return RedisModule_WrongArity(ctx);
     } catch (const Error &err) {

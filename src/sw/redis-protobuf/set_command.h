@@ -57,6 +57,10 @@ private:
         StringView val;
     };
 
+    int _run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;
+
+    friend class MergeCommand;
+
     Args _parse_args(RedisModuleString **argv, int argc) const;
 
     // Return the position of the first non-option argument.

@@ -28,36 +28,9 @@ namespace pb {
 
 int SetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const {
     try {
-        assert(ctx != nullptr);
+        auto res = _run(ctx, argv, argc);
 
-        // TODO: if the ByteSize is too large, serialization might fail.
-
-        auto args = _parse_args(argv, argc);
-        const auto &path = args.path;
-
-        auto key = api::open_key(ctx, args.key_name, api::KeyMode::WRITEONLY);
-        assert(key);
-
-        if (!api::key_exists(key.get(), RedisProtobuf::instance().type())) {
-            if (args.opt == Args::Opt::XX) {
-                return RedisModule_ReplyWithLongLong(ctx, 0);
-            }
-
-            _create_msg(*key, path, args.val);
-        } else {
-            if (args.opt == Args::Opt::NX) {
-                return RedisModule_ReplyWithLongLong(ctx, 0);
-            }
-
-            _set_msg(*key, path, args.val);
-        }
-
-        auto expire = args.expire.count();
-        if (expire > 0) {
-            RedisModule_SetExpire(key.get(), expire);
-        }
-
-        return RedisModule_ReplyWithLongLong(ctx, 1);
+        return RedisModule_ReplyWithLongLong(ctx, res);
     } catch (const WrongArityError &err) {
         return RedisModule_WrongArity(ctx);
     } catch (const Error &err) {
@@ -65,6 +38,39 @@ int SetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
     }
 
     return REDISMODULE_ERR;
+}
+
+int SetCommand::_run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const {
+    assert(ctx != nullptr);
+
+    // TODO: if the ByteSize is too large, serialization might fail.
+
+    auto args = _parse_args(argv, argc);
+    const auto &path = args.path;
+
+    auto key = api::open_key(ctx, args.key_name, api::KeyMode::WRITEONLY);
+    assert(key);
+
+    if (!api::key_exists(key.get(), RedisProtobuf::instance().type())) {
+        if (args.opt == Args::Opt::XX) {
+            return 0;
+        }
+
+        _create_msg(*key, path, args.val);
+    } else {
+        if (args.opt == Args::Opt::NX) {
+            return 0;
+        }
+
+        _set_msg(*key, path, args.val);
+    }
+
+    auto expire = args.expire.count();
+    if (expire > 0) {
+        RedisModule_SetExpire(key.get(), expire);
+    }
+
+    return 1;
 }
 
 SetCommand::Args SetCommand::_parse_args(RedisModuleString **argv, int argc) const {
