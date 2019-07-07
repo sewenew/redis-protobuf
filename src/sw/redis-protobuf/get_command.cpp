@@ -132,17 +132,17 @@ void GetCommand::_get_msg(RedisModuleCtx *ctx,
 void GetCommand::_get_field(RedisModuleCtx *ctx,
         const ConstFieldRef &field,
         Args::Format format) const {
-    if (field.is_array_element()) {
-        return _get_array_element(ctx, field, format);
-    } else if (field.is_array()) {
-        // TODO: 
-        throw Error("cannot get array field");
-    } else if (field.is_map()) {
+    if (field.is_map()) {
         // TODO: add map support.
         throw Error("cannot get map field");
-    } // else non-aggregate type.
-
-    _get_scalar_field(ctx, field, format);
+    } else if (field.is_array_element()) {
+        _get_array_element(ctx, field, format);
+    } else if (field.is_array()) {
+        _get_array(ctx, field, format);
+    } else {
+        // Non-aggregate type.
+        _get_scalar_field(ctx, field, format);
+    }
 }
 
 void GetCommand::_get_scalar_field(RedisModuleCtx *ctx,
@@ -262,6 +262,22 @@ void GetCommand::_get_array_element(RedisModuleCtx *ctx,
     }
     default:
         assert(false);
+    }
+}
+
+void GetCommand::_get_array(RedisModuleCtx *ctx,
+        const ConstFieldRef &field,
+        Args::Format format) const {
+    auto arr_size = field.array_size();
+
+    RedisModule_ReplyWithArray(ctx, arr_size);
+
+    for (auto idx = 0; idx != arr_size; ++idx) {
+        try {
+            _get_field(ctx, field.get_array_element(idx), format);
+        } catch (const Error &e) {
+            api::reply_with_error(ctx, e);
+        }
     }
 }
 

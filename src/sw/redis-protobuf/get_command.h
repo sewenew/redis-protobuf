@@ -73,6 +73,10 @@ private:
             const ConstFieldRef &field,
             Args::Format format) const;
 
+    void _get_array(RedisModuleCtx *ctx,
+            const ConstFieldRef &field,
+            Args::Format format) const;
+
     void _get_msg(RedisModuleCtx *ctx,
             const gp::Message &msg,
             Args::Format format) const;

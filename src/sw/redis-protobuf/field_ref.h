@@ -95,6 +95,8 @@ public:
 
     int array_size() const;
 
+    FieldRef get_array_element(int idx) const;
+
     explicit operator bool() const {
         return _field_desc != nullptr;
     }
@@ -292,7 +294,9 @@ FieldRef<Msg>::FieldRef(Msg *root_msg, const Path &path) {
             }
 
             if (_field_desc->is_repeated()) {
-                assert(_arr_idx >= 0);
+                if (_arr_idx < 0) {
+                    throw Error("invalid path");
+                }
                 _msg = _get_sub_repeated_msg(_msg, _field_desc, _arr_idx);
                 _arr_idx = -1;
             } else if (_field_desc->is_map()) {
@@ -312,6 +316,16 @@ FieldRef<Msg>::FieldRef(Msg *root_msg, const Path &path) {
             }
         }
     }
+}
+
+template <typename Msg>
+FieldRef<Msg> FieldRef<Msg>::get_array_element(int idx) const {
+    assert(is_array() && idx < array_size());
+
+    FieldRef<Msg> element(*this);
+    element._arr_idx = idx;
+
+    return element;
 }
 
 template <typename Msg>
