@@ -44,10 +44,11 @@ private:
         
         enum class Format {
             BINARY = 0,
-            JSON
+            JSON,
+            NONE
         };
 
-        Format format = Format::BINARY;
+        Format format = Format::NONE;
 
         Path path;
     };

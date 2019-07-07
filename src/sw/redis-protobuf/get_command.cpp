@@ -118,6 +118,10 @@ void GetCommand::_get_msg(RedisModuleCtx *ctx,
         result = util::msg_to_json(msg);
         break;
 
+    case Args::Format::NONE:
+        throw Error("option --FORMAT not specified");
+        break;
+
     default:
         assert(false);
     }
