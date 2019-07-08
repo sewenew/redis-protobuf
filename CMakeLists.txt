@@ -22,7 +22,7 @@ add_library(${SHARED_LIB} SHARED ${PROJECT_SOURCE_FILES})
 find_path(PROTOBUF_HEADER google)
 target_include_directories(${SHARED_LIB} PUBLIC ${PROTOBUF_HEADER})
 
-find_library(PROTOBUF_LIB libprotobuf.a)
+find_library(PROTOBUF_LIB protobuf)
 target_link_libraries(${SHARED_LIB} ${PROTOBUF_LIB})
 
 set_target_properties(${SHARED_LIB} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
