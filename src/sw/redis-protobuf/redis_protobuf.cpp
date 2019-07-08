@@ -71,11 +71,13 @@ void RedisProtobuf::load(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     _options.load(argv, argc);
 
     RedisModuleTypeMethods methods = {
-        .version = REDISMODULE_TYPE_METHOD_VERSION,
-        .rdb_load = _rdb_load,
-        .rdb_save = _rdb_save,
-        .aof_rewrite = _aof_rewrite,
-        .free = _free_msg
+        REDISMODULE_TYPE_METHOD_VERSION,
+        _rdb_load,
+        _rdb_save,
+        _aof_rewrite,
+        nullptr,
+        nullptr,
+        _free_msg
     };
 
     _module_type = RedisModule_CreateDataType(ctx,
