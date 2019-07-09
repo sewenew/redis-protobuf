@@ -157,9 +157,8 @@ message SubMsg {
 
 message Msg {
     int32 i = 1;
-    SubMsg m = 2;
-    repeated int32 a = 3;
-    repeated SubMsg ms = 4;
+    SubMsg sub = 2;
+    repeated int32 arr = 3;
 }
 ```
 
