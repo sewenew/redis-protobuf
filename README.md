@@ -48,10 +48,12 @@ In order to make the nested data structure fast and memory efficient, I wrote th
 Run the following command to start *redis-protobuf* with Docker.
 
 ```
-docker run -p 6379:6379 --name redis-protobuf sewenew/redis-protobuf:latest
+docker run -p 6379:6379 sewenew/redis-protobuf:latest
 ```
 
-Then you can go to the [Getting Started section](#getting-started) to see how to run *redis-protobuf* commands.
+In this case, Docker runs Redis with a *redis.conf* file located at */usr/lib/redis/conf/redis.conf*. Also, you should put your *.proto* files in */usr/lib/redis/proto* directory. However, by default, the Docker image ships with an [example.proto](https://github.com/sewenew/redis-protobuf/blob/master/docker/example.proto) file, so that you can run the following examples without creating extra *.proto* files.
+
+After running the Docker image, you can go to the [Getting Started section](#getting-started) to see how to run *redis-protobuf* commands.
 
 ### Install redis-protobuf With Source Code
 
@@ -142,6 +144,8 @@ Module 'PB' loaded from /path/to/libredis-protobuf.so
 After [loading the module](#load-redis-protobuf), you can use any Redis client to send *redis-protobuf* [commands](#Commands).
 
 We'll use the following *.proto* file as example, unless otherwise stated. In order to test examples in this doc, you need to put the following *.proto* file in the *proto-directory*.
+
+**NOTE**: The [Docker image](https://cloud.docker.com/repository/docker/sewenew/redis-protobuf) also ships with this *.proto* file. So you can run the following examples with Docker too.
 
 ```
 syntax = "proto3";
