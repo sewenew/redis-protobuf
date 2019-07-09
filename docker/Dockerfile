@@ -1,7 +1,7 @@
 From redis:latest
 
 ENV LIBDIR /usr/lib/redis/modules
-ENV DEPS "make g++ curl cmake"
+ENV DEPS "make g++ curl cmake unzip"
 
 # Install dependencies
 RUN set -ex;\
@@ -23,9 +23,9 @@ RUN set -ex;\
 # Build redis-protobuf
 RUN set -ex;\
         cd /usr/src;\
-        curl -L -k 'https://github.com/sewenew/redis-protobuf/archive/0.0.1.tar.gz' -o redis-protobuf-0.0.1.tar.gz;\
-        tar xfz redis-protobuf-0.0.1.tar.gz;\
-        cd redis-protobuf-0.0.1;\
+        curl -L -k 'https://github.com/sewenew/redis-protobuf/archive/master.zip' -o redis-protobuf.zip;\
+        unzip redis-protobuf.zip;\
+        cd redis-protobuf-master;\
         mkdir compile;\
         cd compile;\
         cmake -DCMAKE_BUILD_TYPE=Release ..;\
