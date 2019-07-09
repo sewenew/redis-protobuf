@@ -49,7 +49,33 @@ In order to make the nested data structure fast and memory efficient, I wrote th
 
 ### Install redis-protobuf With Source Code
 
-First of all, you should follow the [instruction](https://github.com/protocolbuffers/protobuf/tree/master/src) to install Protobuf-C++.
+#### Install Protobuf
+
+First of all, you need to install Protobuf-C++.
+
+```
+curl -L -k https://github.com/protocolbuffers/protobuf/releases/download/v3.8.0/protobuf-cpp-3.8.0.tar.gz -o protobuf-cpp-3.8.0.tar.gz
+
+tar xfz protobuf-cpp-3.8.0.tar.gz
+
+cd protobuf-3.8.0
+
+./configure "CFLAGS=-fPIC" "CXXFLAGS=-fPIC"
+
+make -j 4
+
+make install
+```
+
+If you want to install Protobuf at a non-default location, you can specify the `--prefix=/path/to/install/location` option.
+
+```
+./configure "CFLAGS=-fPIC" "CXXFLAGS=-fPIC" --prefix=/usr
+```
+
+**NOTE**: You must specify the `"CFLAGS=-fPIC" "CXXFLAGS=-fPIC"` options when compiling Protobuf.
+
+#### Install redis-protobuf
 
 *redis-protobuf* is built with [CMAKE](https://cmake.org).
 
