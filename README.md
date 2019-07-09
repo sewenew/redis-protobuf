@@ -45,9 +45,17 @@ In order to make the nested data structure fast and memory efficient, I wrote th
 
 ### Run redis-protobuf With Docker
 
-**TODO**
+Run the following command to start *redis-protobuf* with Docker.
+
+```
+docker run -p 6379:6379 --name redis-protobuf sewenew/redis-protobuf:latest
+```
+
+Then you can go to the [Getting Started section](#getting-started) to see how to run *redis-protobuf* commands.
 
 ### Install redis-protobuf With Source Code
+
+You can also install redis-protobuf with source code.
 
 #### Install Protobuf
 
