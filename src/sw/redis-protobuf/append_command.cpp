@@ -30,6 +30,9 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
         auto args = _parse_args(argv, argc);
         const auto &path = args.path;
+        if (path.empty()) {
+            throw Error("can only call append on array");
+        }
 
         auto key = api::open_key(ctx, args.key_name, api::KeyMode::WRITEONLY);
         assert(key);
@@ -52,10 +55,6 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         } else {
             auto *msg = api::get_msg_by_key(key.get());
             assert(msg != nullptr);
-
-            if (path.empty()) {
-                throw Error("can only call append on array");
-            }
 
             MutableFieldRef field(msg, path);
             // TODO: create a new message, and append to that message, then swap to this message.
