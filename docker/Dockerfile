@@ -35,8 +35,8 @@ RUN set -ex;\
 ENV REDISDIR /usr/lib/redis
 RUN set -ex;\
         mkdir -p "$REDISDIR/proto" "$REDISDIR/modules" "$REDISDIR/conf";\
-        cp /usr/src/redis-protobuf-0.0.1/docker/example.proto "$REDISDIR/proto";\
-        cp /usr/src/redis-protobuf-0.0.1/compile/libredis-protobuf.so "$REDISDIR/modules";\
+        cp /usr/src/redis-protobuf-master/docker/example.proto "$REDISDIR/proto";\
+        cp /usr/src/redis-protobuf-master/compile/libredis-protobuf.so "$REDISDIR/modules";\
         echo 'loadmodule /usr/lib/redis/modules/libredis-protobuf.so --dir /usr/lib/redis/proto' > "$REDISDIR/conf/redis.conf";
 
 # Cleanup
