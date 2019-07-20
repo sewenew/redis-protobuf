@@ -13,9 +13,9 @@ RUN set -ex;\
 RUN set -ex;\
         mkdir -p /usr/src;\
         cd /usr/src;\
-        curl -L -k https://github.com/protocolbuffers/protobuf/releases/download/v3.8.0/protobuf-cpp-3.8.0.tar.gz -o protobuf-cpp-3.8.0.tar.gz;\
-        tar xfz protobuf-cpp-3.8.0.tar.gz;\
-        cd protobuf-3.8.0;\
+        curl -L -k https://github.com/sewenew/redis-protobuf/releases/download/0.0.1/protobuf-3.8.0-map-reflection.tar.gz -o protobuf-3.8.0-map-reflection.tar.gz;\
+        tar xfz protobuf-3.8.0-map-reflection.tar.gz;\
+        cd protobuf-3.8.0-map-reflection;\
         ./configure "CFLAGS=-fPIC" "CXXFLAGS=-fPIC" --prefix=/usr;\
         make -j 4;\
         make install;

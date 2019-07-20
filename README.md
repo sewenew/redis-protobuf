@@ -61,14 +61,16 @@ You can also install redis-protobuf with source code.
 
 #### Install Protobuf
 
-First of all, you need to install Protobuf-C++.
+First of all, you need to install Protobuf-C++. However, [the offical release](https://github.com/sewenew/redis-protobuf) doesn't expose reflection API for fields of map type (see [this issue](https://github.com/protocolbuffers/protobuf/issues/1322) for detail). So I modified the code to expose some internal interfaces. I published the modified code with *redis-protobuf* release, and you can download it from [here](https://github.com/sewenew/redis-protobuf/releases/download/0.0.1/protobuf-3.8.0-map-reflection.tar.gz -o protobuf-3.8.0-map-reflection.tar.gz). Also, you can check the *CHANGES-BY-SEWENEW.md* file for detail on what I've modifed.
+
+Install modified Protobuf with the following commands:
 
 ```
-curl -L -k https://github.com/protocolbuffers/protobuf/releases/download/v3.8.0/protobuf-cpp-3.8.0.tar.gz -o protobuf-cpp-3.8.0.tar.gz
+curl -L -k https://github.com/sewenew/redis-protobuf/releases/download/0.0.1/protobuf-3.8.0-map-reflection.tar.gz -o protobuf-3.8.0-map-reflection.tar.gz
 
-tar xfz protobuf-cpp-3.8.0.tar.gz
+tar xfz protobuf-3.8.0-map-reflection.tar.gz
 
-cd protobuf-3.8.0
+cd protobuf-3.8.0-map-reflection
 
 ./configure "CFLAGS=-fPIC" "CXXFLAGS=-fPIC"
 
