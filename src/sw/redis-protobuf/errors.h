@@ -61,7 +61,7 @@ public:
 
 class WrongArityError : public Error {
 public:
-    explicit WrongArityError() : Error("WrongArity") {}
+    WrongArityError() : Error("WrongArity") {}
 
     WrongArityError(const WrongArityError &) = default;
     WrongArityError& operator=(const WrongArityError &) = default;
@@ -70,6 +70,19 @@ public:
     WrongArityError& operator=(WrongArityError &&) = default;
 
     virtual ~WrongArityError() = default;
+};
+
+class MapKeyNotFoundError : public Error {
+public:
+    explicit MapKeyNotFoundError(const std::string &key) : Error("key not found: " + key) {}
+
+    MapKeyNotFoundError(const MapKeyNotFoundError &) = default;
+    MapKeyNotFoundError& operator=(const MapKeyNotFoundError &) = default;
+
+    MapKeyNotFoundError(MapKeyNotFoundError &&) = default;
+    MapKeyNotFoundError& operator=(MapKeyNotFoundError &&) = default;
+
+    virtual ~MapKeyNotFoundError() = default;
 };
 
 }

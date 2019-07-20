@@ -132,9 +132,10 @@ void GetCommand::_get_msg(RedisModuleCtx *ctx,
 void GetCommand::_get_field(RedisModuleCtx *ctx,
         const ConstFieldRef &field,
         Args::Format format) const {
-    if (field.is_map()) {
-        // TODO: add map support.
-        throw Error("cannot get map field");
+    if (field.is_map_element()) {
+        _get_map_element(ctx, field, format);
+    } else if (field.is_map()) {
+        _get_map(ctx, field, format);
     } else if (field.is_array_element()) {
         _get_array_element(ctx, field, format);
     } else if (field.is_array()) {
@@ -268,7 +269,7 @@ void GetCommand::_get_array_element(RedisModuleCtx *ctx,
 void GetCommand::_get_array(RedisModuleCtx *ctx,
         const ConstFieldRef &field,
         Args::Format format) const {
-    auto arr_size = field.array_size();
+    auto arr_size = field.size();
 
     RedisModule_ReplyWithArray(ctx, arr_size);
 
@@ -278,6 +279,188 @@ void GetCommand::_get_array(RedisModuleCtx *ctx,
         } catch (const Error &e) {
             api::reply_with_error(ctx, e);
         }
+    }
+}
+
+void GetCommand::_get_map_element(RedisModuleCtx *ctx,
+        const ConstFieldRef &field,
+        Args::Format format) const {
+    switch (field.map_value_type()) {
+    case gp::FieldDescriptor::CPPTYPE_INT32: {
+        auto val = field.get_mapped_int32();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_INT64: {
+        auto val = field.get_mapped_int64();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_UINT32: {
+        auto val = field.get_mapped_uint32();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_UINT64: {
+        auto val = field.get_mapped_uint64();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_DOUBLE: {
+        auto val = field.get_mapped_double();
+        auto str = std::to_string(val);
+        RedisModule_ReplyWithSimpleString(ctx, str.data());
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_FLOAT: {
+        auto val = field.get_mapped_float();
+        auto str = std::to_string(val);
+        RedisModule_ReplyWithSimpleString(ctx, str.data());
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_BOOL: {
+        auto val = field.get_mapped_bool();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_ENUM: {
+        auto val = field.get_mapped_enum();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_STRING: {
+        const auto &val = field.get_mapped_string();
+        RedisModule_ReplyWithStringBuffer(ctx, val.data(), val.size());
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_MESSAGE: {
+        _get_msg(ctx, field.get_mapped_msg(), format);
+        break;
+    }
+    default:
+        assert(false);
+    }
+}
+
+void GetCommand::_get_map(RedisModuleCtx *ctx,
+        const ConstFieldRef &field,
+        Args::Format format) const {
+    auto arr_size = field.size();
+
+    RedisModule_ReplyWithArray(ctx, arr_size);
+
+    auto range = field.get_map_range();
+    for (auto iter = range.first; iter != range.second; ++iter) {
+        const auto &key = iter->first;
+        const auto &val = iter->second;
+
+        try {
+            _get_map_kv(ctx, field, format, key, val);
+        } catch (const Error &e) {
+            api::reply_with_error(ctx, e);
+        }
+    }
+}
+
+void GetCommand::_get_map_kv(RedisModuleCtx *ctx,
+        const ConstFieldRef &field,
+        Args::Format format,
+        const gp::MapKey &key,
+        const gp::MapValueRef &value) const {
+    RedisModule_ReplyWithArray(ctx, 2);
+
+    // Reply with key.
+    switch (key.type()) {
+    case gp::FieldDescriptor::CPPTYPE_INT32: {
+        auto val = key.GetInt32Value();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_INT64: {
+        auto val = key.GetInt64Value();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_UINT32: {
+        auto val = key.GetUInt32Value();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_UINT64: {
+        auto val = key.GetUInt64Value();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_BOOL: {
+        auto val = key.GetBoolValue();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_STRING: {
+        auto val = key.GetStringValue();
+        RedisModule_ReplyWithStringBuffer(ctx, val.data(), val.size());
+        break;
+    }
+    default:
+        assert(false);
+    }
+
+    // Reply with value.
+    switch (field.map_value_type()) {
+    case gp::FieldDescriptor::CPPTYPE_INT32: {
+        auto val = value.GetInt32Value();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_INT64: {
+        auto val = value.GetInt64Value();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_UINT32: {
+        auto val = value.GetUInt32Value();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_UINT64: {
+        auto val = value.GetUInt64Value();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_DOUBLE: {
+        auto val = value.GetDoubleValue();
+        auto str = std::to_string(val);
+        RedisModule_ReplyWithSimpleString(ctx, str.data());
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_FLOAT: {
+        auto val = value.GetFloatValue();
+        auto str = std::to_string(val);
+        RedisModule_ReplyWithSimpleString(ctx, str.data());
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_BOOL: {
+        auto val = value.GetBoolValue();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_ENUM: {
+        auto val = value.GetEnumValue();
+        RedisModule_ReplyWithLongLong(ctx, val);
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_STRING: {
+        auto val = value.GetStringValue();
+        RedisModule_ReplyWithStringBuffer(ctx, val.data(), val.size());
+        break;
+    }
+    case gp::FieldDescriptor::CPPTYPE_MESSAGE: {
+        const auto &msg = value.GetMessageValue();
+        _get_msg(ctx, msg, format);
+        break;
+    }
+    default:
+        assert(false);
     }
 }
 

@@ -97,7 +97,7 @@ long long AppendCommand::_append(MutableFieldRef &field,
             _append_arr(field, ele);
         }
 
-        return field.array_size();
+        return field.size();
     } else if (field.type() == gp::FieldDescriptor::CPPTYPE_STRING) {
         return _append_str(field, elements);
     } else {

@@ -75,12 +75,8 @@ long long LenCommand::_len(gp::Message &msg, const Path &path) const {
 }
 
 long long LenCommand::_len(const ConstFieldRef &field) const {
-    if (field.is_array()) {
-        return field.array_size();
-    }
-
-    if (field.is_map()) {
-        throw Error("map not supported yet");
+    if (field.is_map() || field.is_array()) {
+        return field.size();
     }
 
     // Scalar type.

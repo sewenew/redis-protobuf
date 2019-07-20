@@ -22,6 +22,8 @@
 #include <type_traits>
 #include <vector>
 #include <google/protobuf/message.h>
+#include <google/protobuf/map_field.h>
+#include <google/protobuf/map.h>
 #include "module_api.h"
 #include "utils.h"
 
@@ -75,8 +77,16 @@ public:
     FieldRef(Msg *root_msg, const Path &path);
 
     gp::FieldDescriptor::CppType type() const {
-        assert(_field_desc != nullptr);
+        if (_field_desc == nullptr) {
+            throw Error("invalid path");
+        }
+
         return _field_desc->cpp_type();
+    }
+
+    gp::FieldDescriptor::CppType map_value_type() const {
+        const auto *val_desc = _mapped_value_desc();
+        return val_desc->cpp_type();
     }
 
     std::string msg_type() const;
@@ -93,9 +103,17 @@ public:
         return _field_desc != nullptr && _field_desc->is_map();
     }
 
-    int array_size() const;
+    bool is_map_element() const {
+        return bool(_map_key);
+    }
+
+    int size() const;
 
     FieldRef get_array_element(int idx) const;
+
+    auto get_map_range() const ->
+        std::pair<gp::Map<gp::MapKey, gp::MapValueRef>::const_iterator,
+            gp::Map<gp::MapKey, gp::MapValueRef>::const_iterator>;
 
     explicit operator bool() const {
         return _field_desc != nullptr;
@@ -181,6 +199,107 @@ public:
         return _msg->GetReflection()->GetRepeatedMessage(*_msg, _field_desc, _arr_idx);
     }
 
+    int32_t get_mapped_int32() const {
+        const auto &val = _get_map_value_const(_msg, _field_desc, *_map_key);
+        return val.GetInt32Value();
+    }
+
+    int64_t get_mapped_int64() const {
+        const auto &val = _get_map_value_const(_msg, _field_desc, *_map_key);
+        return val.GetInt64Value();
+    }
+
+    uint32_t get_mapped_uint32() const {
+        const auto &val = _get_map_value_const(_msg, _field_desc, *_map_key);
+        return val.GetUInt32Value();
+    }
+
+    uint64_t get_mapped_uint64() const {
+        const auto &val = _get_map_value_const(_msg, _field_desc, *_map_key);
+        return val.GetUInt64Value();
+    }
+
+    float get_mapped_float() const {
+        const auto &val = _get_map_value_const(_msg, _field_desc, *_map_key);
+        return val.GetFloatValue();
+    }
+
+    double get_mapped_double() const {
+        const auto &val = _get_map_value_const(_msg, _field_desc, *_map_key);
+        return val.GetDoubleValue();
+    }
+
+    bool get_mapped_bool() const {
+        const auto &val = _get_map_value_const(_msg, _field_desc, *_map_key);
+        return val.GetBoolValue();
+    }
+
+    int get_mapped_enum() const {
+        const auto &val = _get_map_value_const(_msg, _field_desc, *_map_key);
+        return val.GetEnumValue();
+    }
+
+    std::string get_mapped_string() const {
+        const auto &val = _get_map_value_const(_msg, _field_desc, *_map_key);
+        return val.GetStringValue();
+    }
+
+    const gp::Message& get_mapped_msg() const {
+        const auto &val = _get_map_value_const(_msg, _field_desc, *_map_key);
+        return val.GetMessageValue();
+    }
+
+    void set_mapped_int32(int32_t val) {
+        auto &val_ref = _get_map_value(_msg, _field_desc, *_map_key);
+        val_ref.SetInt32Value(val);
+    }
+
+    void set_mapped_int64(int64_t val) {
+        auto &val_ref = _get_map_value(_msg, _field_desc, *_map_key);
+        val_ref.SetInt64Value(val);
+    }
+
+    void set_mapped_uint32(uint32_t val) {
+        auto &val_ref = _get_map_value(_msg, _field_desc, *_map_key);
+        val_ref.SetUInt32Value(val);
+    }
+
+    void set_mapped_uint64(uint64_t val) {
+        auto &val_ref = _get_map_value(_msg, _field_desc, *_map_key);
+        val_ref.SetUInt64Value(val);
+    }
+
+    void set_mapped_float(float val) {
+        auto &val_ref = _get_map_value(_msg, _field_desc, *_map_key);
+        val_ref.SetFloatValue(val);
+    }
+
+    void set_mapped_double(double val) {
+        auto &val_ref = _get_map_value(_msg, _field_desc, *_map_key);
+        val_ref.SetDoubleValue(val);
+    }
+
+    void set_mapped_bool(bool val) {
+        auto &val_ref = _get_map_value(_msg, _field_desc, *_map_key);
+        val_ref.SetBoolValue(val);
+    }
+
+    void set_mapped_enum(int val) {
+        auto &val_ref = _get_map_value(_msg, _field_desc, *_map_key);
+        val_ref.SetEnumValue(val);
+    }
+
+    void set_mapped_string(const std::string &val) {
+        auto &val_ref = _get_map_value(_msg, _field_desc, *_map_key);
+        val_ref.SetStringValue(val);
+    }
+
+    void set_mapped_msg(const gp::Message &val) {
+        auto &val_ref = _get_map_value(_msg, _field_desc, *_map_key);
+        auto *msg = val_ref.MutableMessageValue();
+        msg->CopyFrom(val);
+    }
+
     void set_int32(int32_t val);
     void set_int64(int64_t val);
     void set_uint32(uint32_t val);
@@ -221,41 +340,35 @@ public:
     void merge(const gp::Message &msg);
 
 private:
-    template <typename T>
-    T* _get_sub_msg(T *msg, const gp::FieldDescriptor *field_desc, std::true_type) {
+    Msg* _get_sub_msg(Msg *msg, const gp::FieldDescriptor *field_desc, std::true_type) {
         return &(msg->GetReflection()->GetMessage(*msg, field_desc));
     }
 
-    template <typename T>
-    T* _get_sub_msg(T *msg, const gp::FieldDescriptor *field_desc, std::false_type) {
+    Msg* _get_sub_msg(Msg *msg, const gp::FieldDescriptor *field_desc, std::false_type) {
         return msg->GetReflection()->MutableMessage(msg, field_desc);
     }
 
-    template <typename T>
-    T* _get_sub_msg(T *msg, const gp::FieldDescriptor *field_desc) {
+    Msg* _get_sub_msg(Msg *msg, const gp::FieldDescriptor *field_desc) {
         assert(msg != nullptr);
 
         return _get_sub_msg(msg, field_desc, typename std::is_const<Msg>::type());
     }
 
-    template <typename T>
-    T* _get_sub_repeated_msg(T *msg,
+    Msg* _get_sub_repeated_msg(Msg *msg,
             const gp::FieldDescriptor *field_desc,
-        int idx,
-        std::true_type) {
+            int idx,
+            std::true_type) {
         return &(msg->GetReflection()->GetRepeatedMessage(*msg, field_desc, idx));
     }
 
-    template <typename T>
-    T* _get_sub_repeated_msg(T *msg,
+    Msg* _get_sub_repeated_msg(Msg *msg,
             const gp::FieldDescriptor *field_desc,
             int idx,
             std::false_type) {
         return msg->GetReflection()->MutableRepeatedMessage(msg, field_desc, idx);
     }
 
-    template <typename T>
-    T* _get_sub_repeated_msg(T *msg,
+    Msg* _get_sub_repeated_msg(Msg *msg,
             const gp::FieldDescriptor *field_desc,
             int idx) {
         assert(msg != nullptr);
@@ -263,17 +376,115 @@ private:
         return _get_sub_repeated_msg(msg, field_desc, idx, typename std::is_const<Msg>::type());
     }
 
+    class NotFoundError : public Error {
+    public:
+        NotFoundError() : Error("key not found") {}
+    };
+
+    const gp::MapValueRef& _get_map_value_const(Msg *msg,
+            const gp::FieldDescriptor *field_desc,
+            const gp::MapKey &key) const {
+        // The following is hacking, hacking, and hacking!!!
+        const auto *reflection =
+            static_cast<const gp::internal::GeneratedMessageReflection*>(msg->GetReflection());
+        const auto &map_base = reflection->GetRaw<gp::internal::MapFieldBase>(*msg, field_desc);
+        const auto &dynamic_map = static_cast<const gp::internal::DynamicMapField&>(map_base);
+        const auto &m = dynamic_map.GetMap();
+        auto iter = m.find(key);
+        if (iter == m.end()) {
+            throw NotFoundError();
+        }
+
+        return iter->second;
+    }
+
+    gp::MapValueRef& _get_map_value(Msg *msg,
+            const gp::FieldDescriptor *field_desc,
+            const gp::MapKey &key) {
+        // The following is hacking, hacking, and hacking!!!
+        const auto *reflection =
+            static_cast<const gp::internal::GeneratedMessageReflection*>(msg->GetReflection());
+        auto *map_base = reflection->MutableRaw<gp::internal::MapFieldBase>(msg, field_desc);
+        auto *dynamic_map = static_cast<gp::internal::DynamicMapField*>(map_base);
+        auto *m = dynamic_map->MutableMap();
+        auto iter = m->find(key);
+        if (iter == m->end()) {
+            bool res = false;
+            std::tie(iter, res) = m->insert(gp::MapPair<gp::MapKey, gp::MapValueRef>(*_map_key));
+        }
+
+        return iter->second;
+    }
+
+    Msg* _get_map_msg(Msg *msg,
+            const gp::FieldDescriptor *field_desc,
+            const gp::MapKey &key) {
+        return _get_map_msg(msg, field_desc, key, typename std::is_const<Msg>::type());
+    }
+
+    Msg* _get_map_msg(Msg *msg,
+            const gp::FieldDescriptor *field_desc,
+            const gp::MapKey &key,
+            std::true_type) {
+        const auto &val = _get_map_value_const(msg, field_desc, key);
+        const auto *val_desc = _mapped_value_desc();
+        if (val_desc->cpp_type() != gp::FieldDescriptor::CPPTYPE_MESSAGE) {
+            throw Error("map value is not of message type");
+        }
+
+        return &val.GetMessageValue();
+    }
+
+    Msg* _get_map_msg(Msg *msg,
+            const gp::FieldDescriptor *field_desc,
+            const gp::MapKey &key,
+            std::false_type) {
+        auto &val = _get_map_value(msg, field_desc, key);
+        auto *val_desc = _mapped_value_desc();
+        if (val_desc->cpp_type() != gp::FieldDescriptor::CPPTYPE_MESSAGE) {
+            throw Error("map value is not of message type");
+        }
+
+        return val.MutableMessageValue();
+    }
+
+    const gp::FieldDescriptor* _mapped_value_desc() const {
+        assert(is_map());
+
+        auto *desc = _field_desc->message_type();
+        assert(desc != nullptr);
+
+        auto *val_desc = desc->FindFieldByName("value");
+        assert(val_desc != nullptr);
+
+        return val_desc;
+    }
+
+    void _validate_parameters(Msg *root_msg, const Path &path) const;
+
+    void _parse_aggregate_field(const std::string &field);
+
+    Optional<gp::MapKey> _parse_map_key(const std::string &key) {
+        return _parse_map_key_impl(key, typename std::is_const<Msg>::type());
+    }
+
+    Optional<gp::MapKey> _parse_map_key_impl(const std::string &key);
+
+    Optional<gp::MapKey> _parse_map_key_impl(const std::string &key, std::true_type);
+
+    Optional<gp::MapKey> _parse_map_key_impl(const std::string &key, std::false_type) {
+        return _parse_map_key_impl(key);
+    }
+
+    void _del_array_element();
+
     Msg *_msg = nullptr;
 
     const gp::FieldDescriptor *_field_desc = nullptr;
 
     int _arr_idx = -1;
 
-    void _validate_parameters(Msg *root_msg, const Path &path) const;
-
-    void _parse_aggregate_field(const std::string &field);
-
-    void _del_array_element();
+    Optional<gp::MapKey> _map_key;
 };
 
 using ConstFieldRef = FieldRef<const gp::Message>;
@@ -282,6 +493,9 @@ using MutableFieldRef = FieldRef<gp::Message>;
 template <typename Msg>
 FieldRef<Msg>::FieldRef(Msg *root_msg, const Path &path) {
     _validate_parameters(root_msg, path);
+
+    // Here we have to give _map_key a valid value.
+    _map_key->SetBoolValue(false);
 
     _msg = root_msg;
 
@@ -293,14 +507,19 @@ FieldRef<Msg>::FieldRef(Msg *root_msg, const Path &path) {
                 throw Error("invalid path");
             }
 
-            if (_field_desc->is_repeated()) {
+            if (_field_desc->is_map()) {
+                if (!_map_key) {
+                    throw Error("invalid path");
+                }
+                _msg = _get_map_msg(_msg, _field_desc, *_map_key);
+                _map_key.reset();
+                _map_key->SetBoolValue(false);
+            } else if (_field_desc->is_repeated()) {
                 if (_arr_idx < 0) {
                     throw Error("invalid path");
                 }
                 _msg = _get_sub_repeated_msg(_msg, _field_desc, _arr_idx);
                 _arr_idx = -1;
-            } else if (_field_desc->is_map()) {
-                throw Error("map is not supported yet");
             } else {
                 _msg = _get_sub_msg(_msg, _field_desc);
             }
@@ -320,12 +539,28 @@ FieldRef<Msg>::FieldRef(Msg *root_msg, const Path &path) {
 
 template <typename Msg>
 FieldRef<Msg> FieldRef<Msg>::get_array_element(int idx) const {
-    assert(is_array() && idx < array_size());
+    assert(is_array() && idx < size());
 
     FieldRef<Msg> element(*this);
     element._arr_idx = idx;
 
     return element;
+}
+
+template <typename Msg>
+auto FieldRef<Msg>::get_map_range() const ->
+    std::pair<gp::Map<gp::MapKey, gp::MapValueRef>::const_iterator,
+        gp::Map<gp::MapKey, gp::MapValueRef>::const_iterator> {
+    assert(is_map() && idx < size());
+
+    // The following is hacking, hacking, and hacking!!!
+    const auto *reflection =
+        static_cast<const gp::internal::GeneratedMessageReflection*>(_msg->GetReflection());
+    const auto &map_base = reflection->GetRaw<gp::internal::MapFieldBase>(*_msg, _field_desc);
+    const auto &dynamic_map = static_cast<const gp::internal::DynamicMapField&>(map_base);
+    const auto &m = dynamic_map.GetMap();
+
+    return {m.begin(), m.end()};
 }
 
 template <typename Msg>
@@ -340,9 +575,9 @@ std::string FieldRef<Msg>::msg_type() const {
 }
 
 template <typename Msg>
-int FieldRef<Msg>::array_size() const {
-    if (!is_array() || is_array_element()) {
-        throw Error("not an array");
+int FieldRef<Msg>::size() const {
+    if (!(is_map() && !is_map_element()) && !(is_array() && !is_array_element())) {
+        throw Error("not an array or map");
     }
 
     return _msg->GetReflection()->FieldSize(*_msg, _field_desc);
@@ -374,7 +609,9 @@ void FieldRef<Msg>::_parse_aggregate_field(const std::string &field) {
         throw Error("invalid field: " + name);
     }
 
-    if (_field_desc->is_repeated()) {
+    if (is_map()) {
+        _map_key = _parse_map_key(key);
+    } else if (is_array()) {
         try {
             _arr_idx = std::stoi(key);
         } catch (const std::exception &e) {
@@ -386,9 +623,66 @@ void FieldRef<Msg>::_parse_aggregate_field(const std::string &field) {
             throw Error("array index is out-of-range: " + key + " : " + std::to_string(size));
         }
     } else {
-        // TODO: support map
         throw Error("not an array or map");
     }
+}
+
+template <typename Msg>
+Optional<gp::MapKey> FieldRef<Msg>::_parse_map_key_impl(const std::string &key, std::true_type) {
+    auto map_key = _parse_map_key_impl(key);
+
+    try {
+        _get_map_value_const(_msg, _field_desc, *map_key);
+    } catch (const NotFoundError &e) {
+        throw MapKeyNotFoundError(key);
+    }
+
+    return map_key;
+}
+
+template <typename Msg>
+Optional<gp::MapKey> FieldRef<Msg>::_parse_map_key_impl(const std::string &key) {
+    assert(is_map() && !_map_key);
+
+    auto *desc = _field_desc->message_type();
+    assert(desc != nullptr);
+
+    auto *key_desc = desc->FindFieldByName("key");
+    assert(key_desc != nullptr);
+
+    // TODO: it seems we don't need a new map_key, just use _map_key
+    gp::MapKey map_key;
+    switch (key_desc->cpp_type()) {
+    case gp::FieldDescriptor::CPPTYPE_INT32:
+        map_key.SetInt32Value(util::sv_to_int32(key));
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_INT64:
+        map_key.SetInt64Value(util::sv_to_int64(key));
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_UINT32:
+        map_key.SetUInt32Value(util::sv_to_uint32(key));
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_UINT64:
+        map_key.SetUInt64Value(util::sv_to_uint64(key));
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_BOOL:
+        map_key.SetBoolValue(util::sv_to_bool(key));
+        break;
+
+    case gp::FieldDescriptor::CPPTYPE_STRING:
+        map_key.SetStringValue(key);
+        break;
+
+    default:
+        // TODO: or assert?
+        throw Error("invalid map key type");
+    }
+
+    return Optional<gp::MapKey>(map_key);
 }
 
 template <typename Msg>

@@ -78,6 +78,8 @@ private:
 
     void _set_scalar_field(MutableFieldRef &field, const StringView &val) const;
 
+    void _set_map_element(MutableFieldRef &field, const StringView &val) const;
+
     void _set_array_element(MutableFieldRef &field, const StringView &val) const;
 
     void _set_field(MutableFieldRef &field, const StringView &sv) const;
@@ -121,6 +123,26 @@ private:
     void _set_repeated_string(MutableFieldRef &field, const StringView &sv) const;
 
     void _set_repeated_msg(MutableFieldRef &field, const StringView &sv) const;
+
+    void _set_mapped_int32(MutableFieldRef &field, const StringView &sv) const;
+
+    void _set_mapped_int64(MutableFieldRef &field, const StringView &sv) const;
+
+    void _set_mapped_uint32(MutableFieldRef &field, const StringView &sv) const;
+
+    void _set_mapped_uint64(MutableFieldRef &field, const StringView &sv) const;
+
+    void _set_mapped_double(MutableFieldRef &field, const StringView &sv) const;
+
+    void _set_mapped_float(MutableFieldRef &field, const StringView &sv) const;
+
+    void _set_mapped_bool(MutableFieldRef &field, const StringView &sv) const;
+
+    void _set_mapped_enum(MutableFieldRef &field, const StringView &sv) const;
+
+    void _set_mapped_string(MutableFieldRef &field, const StringView &sv) const;
+
+    void _set_mapped_msg(MutableFieldRef &field, const StringView &sv) const;
 };
 
 }

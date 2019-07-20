@@ -365,8 +365,6 @@ redis::pb::Msg.m[key]
 redis::pb::Msg.m[key].s
 ```
 
-**NOTE: by now, map is *NOT* supported yet.**
-
 ### PB.SET
 
 #### Syntax

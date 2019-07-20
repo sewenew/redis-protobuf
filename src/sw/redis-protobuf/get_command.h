@@ -77,6 +77,20 @@ private:
             const ConstFieldRef &field,
             Args::Format format) const;
 
+    void _get_map_element(RedisModuleCtx *ctx,
+            const ConstFieldRef &field,
+            Args::Format format) const;
+
+    void _get_map(RedisModuleCtx *ctx,
+            const ConstFieldRef &field,
+            Args::Format format) const;
+
+    void _get_map_kv(RedisModuleCtx *ctx,
+            const ConstFieldRef &field,
+            Args::Format format,
+            const gp::MapKey &key,
+            const gp::MapValueRef &value) const;
+
     void _get_msg(RedisModuleCtx *ctx,
             const gp::Message &msg,
             Args::Format format) const;

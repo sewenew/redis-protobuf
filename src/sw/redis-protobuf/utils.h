@@ -65,6 +65,58 @@ private:
     std::size_t _size = 0;
 };
 
+template <typename T>
+class Optional {
+public:
+    Optional() = default;
+
+    Optional(const Optional &) = default;
+    Optional& operator=(const Optional &) = default;
+
+    Optional(Optional &&) = default;
+    Optional& operator=(Optional &&) = default;
+
+    ~Optional() = default;
+
+    template <typename ...Args>
+    explicit Optional(Args &&...args) : _value(true, T(std::forward<Args>(args)...)) {}
+
+    explicit operator bool() const {
+        return _value.first;
+    }
+
+    T& value() {
+        return _value.second;
+    }
+
+    const T& value() const {
+        return _value.second;
+    }
+
+    T* operator->() {
+        return &(_value.second);
+    }
+
+    const T* operator->() const {
+        return &(_value.second);
+    }
+
+    T& operator*() {
+        return _value.second;
+    }
+
+    const T& operator*() const {
+        return _value.second;
+    }
+
+    void reset() noexcept {
+        _value.first = false;
+    }
+
+private:
+    std::pair<bool, T> _value;
+};
+
 namespace util {
 
 std::string msg_to_json(const gp::Message &msg);
