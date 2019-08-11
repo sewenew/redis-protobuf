@@ -61,7 +61,11 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
             len = _append(field, args.elements);
         }
 
-        return RedisModule_ReplyWithLongLong(ctx, len);
+        RedisModule_ReplyWithLongLong(ctx, len);
+
+        RedisModule_ReplicateVerbatim(ctx);
+
+        return REDISMODULE_OK;
     } catch (const WrongArityError &err) {
         return RedisModule_WrongArity(ctx);
     } catch (const Error &err) {

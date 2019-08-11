@@ -30,7 +30,11 @@ int SetCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
     try {
         auto res = _run(ctx, argv, argc);
 
-        return RedisModule_ReplyWithLongLong(ctx, res);
+        RedisModule_ReplyWithLongLong(ctx, res);
+
+        RedisModule_ReplicateVerbatim(ctx);
+
+        return REDISMODULE_OK;
     } catch (const WrongArityError &err) {
         return RedisModule_WrongArity(ctx);
     } catch (const Error &err) {

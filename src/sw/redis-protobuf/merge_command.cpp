@@ -46,7 +46,11 @@ int MergeCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) c
 
         _merge(args, *msg);
 
-        return RedisModule_ReplyWithLongLong(ctx, 1);
+        RedisModule_ReplyWithLongLong(ctx, 1);
+
+        RedisModule_ReplicateVerbatim(ctx);
+
+        return REDISMODULE_OK;
     } catch (const WrongArityError &err) {
         return RedisModule_WrongArity(ctx);
     } catch (const Error &err) {

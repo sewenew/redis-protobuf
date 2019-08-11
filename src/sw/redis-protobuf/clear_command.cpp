@@ -42,6 +42,8 @@ int ClearCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) c
             RedisModule_ReplyWithLongLong(ctx, 1);
         }
 
+        RedisModule_ReplicateVerbatim(ctx);
+
         return REDISMODULE_OK;
     } catch (const WrongArityError &err) {
         return RedisModule_WrongArity(ctx);
