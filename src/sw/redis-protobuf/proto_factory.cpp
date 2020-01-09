@@ -98,11 +98,16 @@ const gp::Descriptor* ProtoFactory::descriptor(const std::string &type) {
 void ProtoFactory::_load_protos(const std::string &proto_dir) {
     auto files = io::list_dir(proto_dir);
     for (const auto &file : files) {
-        if (!io::is_regular(proto_dir + "/" + file) || io::extension(file) != "proto") {
+        if (!io::is_regular(file) || io::extension(file) != "proto") {
             continue;
         }
 
-        _load(file);
+        auto prefix_size = proto_dir.size() + 1;
+        if (file.size() < prefix_size) {
+            continue;
+        }
+
+        _load(file.substr(prefix_size));
     }
 }
 

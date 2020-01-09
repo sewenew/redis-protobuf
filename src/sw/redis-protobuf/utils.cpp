@@ -180,7 +180,13 @@ std::vector<std::string> list_dir(const std::string &path) {
             continue;
         }
 
-        files.push_back(name);
+        auto file_path = path + "/" + name;
+        if (is_directory(file_path)) {
+            auto sub_files = list_dir(file_path);
+            files.insert(files.end(), sub_files.begin(), sub_files.end());
+        } else {
+            files.push_back(file_path);
+        }
     }
 
     closedir(dir);
