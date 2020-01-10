@@ -123,7 +123,7 @@ In order to load *redis-protobuf*, you need to modify the *redis.conf* file to a
 loadmodule /path/to/libredis-protobuf.so --dir proto-directory
 ```
 
-*proto-directory* is the directory where your *.proto* files located. You must ensure that the directory exists and put your *.proto* files in this directory, so that *redis-protobuf* can load these *.proto* files dynamically.
+*proto-directory* is the directory where your *.proto* files located. You must ensure that the directory exists and put your *.proto* files in this directory, so that *redis-protobuf* can load these *.proto* files dynamically. Also, if you want to use the standard *.proto* files, such as *google/protobuf/timestamp.proto*, *google/protobuf/struct.proto*, you also need to copy */path/to/protobuf/src/google/protobuf/*.proto*, */path/to/protobuf/src/google/protobuf/compiler/*.proto* and */path/to/protobuf/src/google/protobuf/util/*.proto* to *proto-directory*. Check [this](https://github.com/sewenew/redis-protobuf/issues/13) and [this](https://github.com/sewenew/redis-protobuf/issues/14) issues for detail.
 
 Now, you can start your Redis instance:
 
