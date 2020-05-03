@@ -91,6 +91,8 @@ public:
 
     std::string msg_type() const;
 
+    std::string mapped_msg_type() const;
+
     bool is_array() const {
         return _field_desc != nullptr && _field_desc->is_repeated();
     }
@@ -406,12 +408,14 @@ private:
             static_cast<const gp::internal::GeneratedMessageReflection*>(msg->GetReflection());
         auto *map_base = reflection->MutableRaw<gp::internal::MapFieldBase>(msg, field_desc);
         auto *dynamic_map = static_cast<gp::internal::DynamicMapField*>(map_base);
+
+        // Ensure the value is initialized.
+        gp::MapValueRef val;
+        dynamic_map->InsertOrLookupMapValue(key, &val);
+
         auto *m = dynamic_map->MutableMap();
         auto iter = m->find(key);
-        if (iter == m->end()) {
-            bool res = false;
-            std::tie(iter, res) = m->insert(gp::MapPair<gp::MapKey, gp::MapValueRef>(*_map_key));
-        }
+        assert(iter != m->end());
 
         return iter->second;
     }
@@ -502,7 +506,7 @@ FieldRef<Msg>::FieldRef(Msg *root_msg, const Path &path) {
     for (const auto &field : path.fields()) {
         assert(!field.empty() && _msg != nullptr);
 
-        if (_field_desc != nullptr){
+        if (_field_desc != nullptr) {
             if (type() != gp::FieldDescriptor::CPPTYPE_MESSAGE) {
                 throw Error("invalid path");
             }
@@ -572,6 +576,20 @@ std::string FieldRef<Msg>::msg_type() const {
     }
 
     return _field_desc->message_type()->full_name();
+}
+
+template <typename Msg>
+std::string FieldRef<Msg>::mapped_msg_type() const {
+    assert(_field_desc != nullptr);
+
+    if (type() != gp::FieldDescriptor::CPPTYPE_MESSAGE) {
+        throw Error("not a message");
+    }
+
+    auto *value_desc = _field_desc->message_type()->FindFieldByName("value");
+    assert(value_desc != nullptr);
+
+    return value_desc->message_type()->full_name();
 }
 
 template <typename Msg>

@@ -475,7 +475,7 @@ Return an error reply in the following cases:
 #### Examples
 
 ```
-127.0.0.1:6379> PB.GET key Msg
+127.0.0.1:6379> PB.GET key --FORMAT BINARY Msg
 "\b\n\x12\x12\n\x0eredis-protobuf\x10\x02\x1a\x03\x02\x02\x03"
 127.0.0.1:6379> PB.GET key --FORMAT JSON Msg
 "{\"i\":10,\"sub\":{\"s\":\"redis-protobuf\",\"i\":2},\"arr\":[2,2,3]}"
@@ -486,7 +486,7 @@ Return an error reply in the following cases:
 127.0.0.1:6379> PB.GET key Msg.arr[0]
 (integer) 2
 127.0.0.1:6379> PB.GET key Msg.arr
-1) (integer) 1
+1) (integer) 2
 2) (integer) 2
 3) (integer) 3
 ```

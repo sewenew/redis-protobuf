@@ -563,7 +563,7 @@ void SetCommand::_set_mapped_string(MutableFieldRef &field, const StringView &sv
 void SetCommand::_set_mapped_msg(MutableFieldRef &field, const StringView &sv) const {
     assert(field.map_value_type() == gp::FieldDescriptor::CPPTYPE_MESSAGE);
 
-    auto new_msg = RedisProtobuf::instance().proto_factory()->create(field.msg_type(), sv);
+    auto new_msg = RedisProtobuf::instance().proto_factory()->create(field.mapped_msg_type(), sv);
     assert(new_msg);
 
     field.set_mapped_msg(*new_msg);
