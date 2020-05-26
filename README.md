@@ -421,6 +421,10 @@ Return an error reply in the following cases:
 - *path* specifies a message type, and the type doesn't match the type of the message saved in *key*, i.e. try to overwrite a *key*, in which the message is of a different type. See the examples part for an example.
 - *value* doesn't match the type of the field.
 
+#### Time Complexity
+
+O(1)
+
 #### Examples
 
 ```
@@ -472,6 +476,10 @@ Return an error reply in the following cases:
 - If *path* specifies a field, and the field doesn't exist.
 - If *path* specifies a message type, and the type doesn't match the type of the message saved in *key*.
 
+#### Time Complexity
+
+O(1)
+
 #### Examples
 
 ```
@@ -515,6 +523,12 @@ Return an error reply in the following cases:
 - The field is not an array element or a map value.
 - *path* specifies a message type, and the type doesn't match the type of the message saved in *key*.
 
+#### Time Complexity
+
+- Delete array element: O(N), and N is the length of the array.
+- Delete map element: O(1)
+- Delete message: O(1)
+
 #### Examples
 
 ```
@@ -548,6 +562,10 @@ Return an error reply in the following cases:
 - *path* doesn't exist.
 - The field at *path* is not a string or array.
 
+#### Time Complexity
+
+Amortized O(1)
+
 #### Examples
 
 ```
@@ -580,6 +598,10 @@ Return an error reply in the following cases:
 
 - *path* doesn't exist.
 - The field at *path* is not a string/array/map/message.
+
+#### Time Complexity
+
+O(1)
 
 #### Examples
 
@@ -616,6 +638,10 @@ Return an error reply in the following cases:
 - *path* specifies a message type, and the type doesn't match the type of the message saved in *key*.
 - *path* doesn't exist.
 
+#### Time Complexity
+
+O(1)
+
 #### Examples
 
 ```
@@ -637,7 +663,7 @@ PB.MERGE key path value
 
 - If *path* specifies a message type, parse *value* to a message, and merge it into the message in *key*.
 - If *path* specifies a field, merge the *value* into the field.
-- If *key* doesn't exist, this command behaves *PB.SET*.
+- If *key* doesn't exist, this command behaves as *PB.SET*.
 
 Please check the Protubuf doc for the definition of **merge**.
 
@@ -651,6 +677,10 @@ Return an error reply in the following cases:
 
 - *path* specifies a message type, and the type doesn't match the type of the message saved in *key*.
 - *path* doesn't exist.
+
+#### Time Complexity
+
+O(1)
 
 #### Examples
 
@@ -675,6 +705,10 @@ Get the message type of message in *key*.
 #### Error
 
 Return an error reply in the following cases:
+
+#### Time Complexity
+
+O(1)
 
 #### Examples
 
@@ -701,6 +735,10 @@ Get the schema of the given Protobuf message *type*.
 #### Error
 
 Return an error reply in the following cases:
+
+#### Time Complexity
+
+O(1)
 
 #### Examples
 
