@@ -555,7 +555,7 @@ template <typename Msg>
 auto FieldRef<Msg>::get_map_range() const ->
     std::pair<gp::Map<gp::MapKey, gp::MapValueRef>::const_iterator,
         gp::Map<gp::MapKey, gp::MapValueRef>::const_iterator> {
-    assert(is_map() && idx < size());
+    assert(is_map());
 
     // The following is hacking, hacking, and hacking!!!
     const auto *reflection =
