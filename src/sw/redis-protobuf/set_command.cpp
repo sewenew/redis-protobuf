@@ -452,21 +452,21 @@ void SetCommand::_set_repeated_uint64(MutableFieldRef &field, const StringView &
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_UINT64);
 
     auto val = util::sv_to_uint64(sv);
-    field.set_uint64(val);
+    field.set_repeated_uint64(val);
 }
 
 void SetCommand::_set_repeated_double(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_DOUBLE);
 
     auto val = util::sv_to_double(sv);
-    field.set_double(val);
+    field.set_repeated_double(val);
 }
 
 void SetCommand::_set_repeated_float(MutableFieldRef &field, const StringView &sv) const {
     assert(field.type() == gp::FieldDescriptor::CPPTYPE_FLOAT);
 
     auto val = util::sv_to_float(sv);
-    field.set_float(val);
+    field.set_repeated_float(val);
 }
 
 void SetCommand::_set_repeated_bool(MutableFieldRef &field, const StringView &sv) const {
