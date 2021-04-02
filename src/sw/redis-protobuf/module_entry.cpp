@@ -30,7 +30,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
         module.load(ctx, argv, argc);
     } catch (const Error &e) {
-        api::warning(ctx, e.what());
+        api::warning(ctx, "%s", e.what());
         return REDISMODULE_ERR;
     }
 

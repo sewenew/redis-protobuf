@@ -44,23 +44,23 @@ namespace pb {
 namespace api {
 
 template <typename ...Args>
-void warning(RedisModuleCtx *ctx, Args &&...args) {
-    RedisModule_Log(ctx, "warning", std::forward<Args>(args)...);
+void warning(RedisModuleCtx *ctx, const char *fmt, Args &&...args) {
+    RedisModule_Log(ctx, "warning", fmt, std::forward<Args>(args)...);
 }
 
 template <typename ...Args>
-void notice(RedisModuleCtx *ctx, Args &&...args) {
-    RedisModule_Log(ctx, "notice", std::forward<Args>(args)...);
+void notice(RedisModuleCtx *ctx, const char *fmt, Args &&...args) {
+    RedisModule_Log(ctx, "notice", fmt, std::forward<Args>(args)...);
 }
 
 template <typename ...Args>
-void debug(RedisModuleCtx *ctx, Args &&...args) {
-    RedisModule_Log(ctx, "debug", std::forward<Args>(args)...);
+void debug(RedisModuleCtx *ctx, const char *fmt, Args &&...args) {
+    RedisModule_Log(ctx, "debug", fmt, std::forward<Args>(args)...);
 }
 
 template <typename ...Args>
-void verbose(RedisModuleCtx *ctx, Args &&...args) {
-    RedisModule_Log(ctx, "verbose", std::forward<Args>(args)...);
+void verbose(RedisModuleCtx *ctx, const char *fmt, Args &&...args) {
+    RedisModule_Log(ctx, "verbose", fmt, std::forward<Args>(args)...);
 }
 
 struct RedisKeyCloser {
