@@ -26,6 +26,7 @@
 #include <google/protobuf/map.h>
 #include "module_api.h"
 #include "utils.h"
+#include "path.h"
 
 namespace sw {
 
@@ -35,42 +36,6 @@ namespace pb {
 
 namespace gp = google::protobuf;
 
-class Path {
-public:
-    explicit Path(const StringView &str);
-
-    Path() = default;
-
-    Path(const Path &) = default;
-    Path& operator=(const Path &) = default;
-
-    Path(Path &&) = default;
-    Path& operator=(Path &&) = default;
-
-    ~Path() = default;
-
-    const std::string& type() const {
-        return _type;
-    }
-
-    const std::vector<std::string> fields() const {
-        return _fields;
-    }
-
-    bool empty() const {
-        return _fields.empty();
-    }
-
-private:
-    std::pair<std::string, std::size_t> _parse_type(const char *ptr, std::size_t len);
-
-    std::vector<std::string> _parse_fields(const char *ptr, std::size_t len);
-
-    std::string _type;
-
-    std::vector<std::string> _fields;
-};
-
 template <typename Msg>
 class FieldRef {
 public:
@@ -78,7 +43,7 @@ public:
 
     gp::FieldDescriptor::CppType type() const {
         if (_field_desc == nullptr) {
-            throw Error("invalid path");
+            throw Error("invalid path: null field");
         }
 
         return _field_desc->cpp_type();
@@ -503,39 +468,61 @@ FieldRef<Msg>::FieldRef(Msg *root_msg, const Path &path) {
 
     _msg = root_msg;
 
-    for (const auto &field : path.fields()) {
+    const auto &fields = path.fields();
+    for (auto idx = 0U; idx != fields.size(); ++idx) {
+        const auto &field = fields[idx];
+
         assert(!field.empty() && _msg != nullptr);
 
-        if (_field_desc != nullptr) {
-            if (type() != gp::FieldDescriptor::CPPTYPE_MESSAGE) {
-                throw Error("invalid path");
-            }
-
-            if (_field_desc->is_map()) {
-                if (!_map_key) {
-                    throw Error("invalid path");
-                }
-                _msg = _get_map_msg(_msg, _field_desc, *_map_key);
-                _map_key.reset();
-                _map_key->SetBoolValue(false);
-            } else if (_field_desc->is_repeated()) {
-                if (_arr_idx < 0) {
-                    throw Error("invalid path");
-                }
-                _msg = _get_sub_repeated_msg(_msg, _field_desc, _arr_idx);
-                _arr_idx = -1;
-            } else {
-                _msg = _get_sub_msg(_msg, _field_desc);
-            }
+        if (is_map_element()) {
+            assert(_field_desc != nullptr);
+            _msg = _get_map_msg(_msg, _field_desc, *_map_key);
+            _map_key.reset();
+            _map_key->SetBoolValue(false);
+            _field_desc = nullptr;
+        } else if (is_array_element()) {
+            assert(_field_desc != nullptr);
+            _msg = _get_sub_repeated_msg(_msg, _field_desc, _arr_idx);
+            _arr_idx = -1;
+            _field_desc = nullptr;
         }
 
-        if (field.back() == ']') {
-            // It's an array or a map.
-            _parse_aggregate_field(field);
-        } else {
+        if (_field_desc == nullptr) {
             _field_desc = _msg->GetDescriptor()->FindFieldByName(field);
             if (_field_desc == nullptr) {
                 throw Error("field not found: " + field);
+            }
+        } else {
+            if (_field_desc->is_map()) {
+                _map_key = _parse_map_key(field);
+                if (!_map_key) {
+                    throw Error("invalid path: not valid map key");
+                }
+            } else if (_field_desc->is_repeated()) {
+                try {
+                    _arr_idx = std::stoi(field);
+                } catch (const std::exception &e) {
+                    throw Error("invalid array index: " + field);
+                }
+
+                auto size = _msg->GetReflection()->FieldSize(*_msg, _field_desc);
+                if (_arr_idx >= size) {
+                    throw Error("array index is out-of-range: " + field + " : " + std::to_string(size));
+                }
+
+                if (_arr_idx < 0) {
+                    throw Error("invalid path: array index should larger or equal to 0");
+                }
+            } else {
+                if (type() != gp::FieldDescriptor::CPPTYPE_MESSAGE) {
+                    throw Error("invalid path: not a nested type: " + field);
+                }
+
+                _msg = _get_sub_msg(_msg, _field_desc);
+                _field_desc = _msg->GetDescriptor()->FindFieldByName(field);
+                if (_field_desc == nullptr) {
+                    throw Error("field not found: " + field);
+                }
             }
         }
     }

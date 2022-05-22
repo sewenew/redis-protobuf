@@ -88,12 +88,22 @@ SetCommand::Args SetCommand::_parse_args(RedisModuleString **argv, int argc) con
     args.key_name = argv[1];
 
     auto pos = _parse_opts(argv, argc, args);
-    if (pos + 2 != argc) {
+    if (pos + 2 != argc && pos + 3 != argc) {
         throw WrongArityError();
     }
 
-    args.path = Path(argv[pos]);
-    args.val = argv[pos + 1];
+    Path path;
+    StringView val;
+    if (pos + 2 == argc) {
+        path = Path(argv[pos]);
+        val = argv[pos + 1];
+    } else {
+        path = Path(argv[pos], argv[pos + 1]);
+        val = argv[pos + 2];
+    }
+
+    args.path = std::move(path);
+    args.val = std::move(val);
 
     return args;
 }

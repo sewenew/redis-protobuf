@@ -78,16 +78,16 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 AppendCommand::Args AppendCommand::_parse_args(RedisModuleString **argv, int argc) const {
     assert(argv != nullptr);
 
-    if (argc < 4) {
+    if (argc < 5) {
         throw WrongArityError();
     }
 
     Args args;
     args.key_name = argv[1];
-    args.path = Path(argv[2]);
-    args.elements.reserve(argc - 3);
+    args.path = Path(argv[2], argv[3]);
+    args.elements.reserve(argc - 4);
 
-    for (auto idx = 3; idx != argc; ++idx) {
+    for (auto idx = 4; idx != argc; ++idx) {
         args.elements.emplace_back(argv[idx]);
     }
 

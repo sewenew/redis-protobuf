@@ -60,6 +60,10 @@ public:
         return _size;
     }
 
+    constexpr bool empty() const noexcept {
+        return _size == 0;
+    }
+
 private:
     const char *_data = nullptr;
     std::size_t _size = 0;

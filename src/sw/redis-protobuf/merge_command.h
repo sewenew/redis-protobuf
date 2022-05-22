@@ -28,7 +28,7 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.MERGE key path value
+// command: PB.MERGE key type [path] value
 // return:  Integer reply: If the key exists, return 1. Otherwise, return 0.
 //          If key doesn't exist, this command behaves as PB.SET.
 // error:   If the type doesn't match the protobuf message type of the key,

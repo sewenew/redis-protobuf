@@ -70,11 +70,18 @@ int DelCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) con
 DelCommand::Args DelCommand::_parse_args(RedisModuleString **argv, int argc) const {
     assert(argv != nullptr);
 
-    if (argc != 3) {
+    if (argc != 3 && argc != 4) {
         throw WrongArityError();
     }
 
-    return {argv[1], Path(argv[2])};
+    Path path;
+    if (argc == 3) {
+        path = Path(argv[2]);
+    } else {
+        path = Path(argv[2], argv[3]);
+    }
+
+    return {argv[1], std::move(path)};
 }
 
 void DelCommand::_del(gp::Message &msg, const Path &path) const {

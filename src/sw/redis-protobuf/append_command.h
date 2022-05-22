@@ -29,7 +29,7 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.APPEND key path element [element, element...]
+// command: PB.APPEND key type path element [element, element...]
 // return:  Integer reply: return the length of the array after the append operations.
 //          Or return the length of the string after the append operations.
 // error:   If the path doesn't exist, or the corresponding field is not an array, or

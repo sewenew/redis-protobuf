@@ -27,7 +27,7 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.LEN key path
+// command: PB.LEN key type [path]
 // return:  Integer reply: If the specified path is a string, return the 
 //          length of the string in bytes; if the field is an array or a map,
 //          return the size of the array or map. If the field is a message,

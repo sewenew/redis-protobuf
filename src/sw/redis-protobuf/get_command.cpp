@@ -61,11 +61,15 @@ GetCommand::Args GetCommand::_parse_args(RedisModuleString **argv, int argc) con
     args.key_name = argv[1];
 
     auto pos = _parse_opts(argv, argc, args);
-    if (pos + 1 != argc) {
+    if (pos + 1 != argc && pos + 2 != argc) {
         throw WrongArityError();
     }
 
-    args.path = Path(argv[pos]);
+    if (pos + 2 == argc) {
+        args.path = Path(argv[pos], argv[pos + 1]);
+    } else {
+        args.path = Path(argv[pos]);
+    }
 
     return args;
 }

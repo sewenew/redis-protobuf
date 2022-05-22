@@ -63,11 +63,21 @@ int MergeCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) c
 MergeCommand::Args MergeCommand::_parse_args(RedisModuleString **argv, int argc) const {
     assert(argv != nullptr);
 
-    if (argc != 4) {
+    if (argc != 4 && argc != 5) {
         throw WrongArityError();
     }
 
-    return {argv[1], Path(argv[2]), StringView(argv[3])};
+    Path path;
+    StringView val;
+    if (argc == 4) {
+        path = Path(argv[2]);
+        val = StringView(argv[3]);
+    } else {
+        path = Path(argv[2], argv[3]);
+        val = StringView(argv[4]);
+    }
+
+    return {argv[1], std::move(path), std::move(val)};
 }
 
 void MergeCommand::_merge(const Args &args, gp::Message &msg) const {

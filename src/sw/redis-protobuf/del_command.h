@@ -29,7 +29,7 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.DEL key path
+// command: PB.DEL key type [path]
 // return:  Integer reply: return 1, if the key exists. 0, otherwise.
 // error:   If the path doesn't exist, or the corresponding field is not an array,
 //          or map or the message itself, return an error reply.

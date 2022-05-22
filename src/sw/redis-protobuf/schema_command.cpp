@@ -36,7 +36,8 @@ int SchemaCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         if (desc == nullptr) {
             RedisModule_ReplyWithNull(ctx);
         } else {
-            auto schema = _format(desc->DebugString());
+            //auto schema = _format(desc->DebugString());
+            auto schema = desc->DebugString();
 
             RedisModule_ReplyWithStringBuffer(ctx, schema.data(), schema.size());
         }

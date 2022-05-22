@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+//package sw.redis.pb;
+
 message SubMsg {
     string s = 1;
     int32 i = 2;
