@@ -18,6 +18,8 @@
 #define SEWENEW_REDISPROTOBUF_PROTO_FACTORY_H
 
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <google/protobuf/message.h>
 #include <google/protobuf/compiler/importer.h>
 #include <google/protobuf/dynamic_message.h>
@@ -83,6 +85,8 @@ public:
 
     const gp::Descriptor* descriptor(const std::string &type);
 
+    void load(const std::string &file, const std::string &content);
+
 private:
     void _load_protos(const std::string &proto_dir);
 
@@ -98,6 +102,10 @@ private:
     gp::compiler::Importer _importer;
 
     gp::DynamicMessageFactory _factory;
+
+    std::unordered_map<std::string, const gp::Descriptor*> _descriptor_cache;
+
+    std::unordered_set<std::string> _loaded_files;
 };
 
 }

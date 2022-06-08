@@ -15,6 +15,7 @@
  *************************************************************************/
 
 #include "proto_factory.h"
+#include <fstream>
 #include <google/protobuf/util/json_util.h>
 #include "utils.h"
 #include "errors.h"
@@ -92,7 +93,33 @@ MsgUPtr ProtoFactory::create(const std::string &type, const StringView &sv) {
 }
 
 const gp::Descriptor* ProtoFactory::descriptor(const std::string &type) {
-    return _importer.pool()->FindMessageTypeByName(type);
+    auto iter = _descriptor_cache.find(type);
+    if (iter != _descriptor_cache.end()) {
+        return iter->second;
+    }
+
+    const auto *desc = _importer.pool()->FindMessageTypeByName(type);
+    if (desc != nullptr) {
+        _descriptor_cache.emplace(type, desc);
+    }
+
+    return desc;
+}
+
+void ProtoFactory::load(const std::string &filename, const std::string &content) {
+    auto iter = _loaded_files.find(filename);
+    if (iter != _loaded_files.end()) {
+        throw Error("file already loaded: " + filename);
+    }
+
+    auto path = _proto_dir + "/" + filename;
+    std::ofstream file(path);
+    if (!file) {
+        throw Error("failed to open proto file for writing: " + path);
+    }
+    file << content;
+
+    _load(filename);
 }
 
 void ProtoFactory::_load_protos(const std::string &proto_dir) {
@@ -119,6 +146,8 @@ void ProtoFactory::_load(const std::string &file) {
     if (desc == nullptr || _error_collector.has_error()) {
         throw Error("failed to load " + file + "\n" + _error_collector.last_errors());
     }
+
+    _loaded_files.insert(file);
 }
 
 }

@@ -24,6 +24,7 @@
 #include "del_command.h"
 #include "schema_command.h"
 #include "merge_command.h"
+#include "import_command.h"
 
 namespace sw {
 
@@ -149,6 +150,19 @@ void create_commands(RedisModuleCtx *ctx) {
                 1,
                 1) == REDISMODULE_ERR) {
         throw Error("fail to create PB.MERGE command");
+    }
+
+    if (RedisModule_CreateCommand(ctx,
+                "PB.IMPORT",
+                [](RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+                    ImportCommand cmd;
+                    return cmd.run(ctx, argv, argc);
+                },
+                "write deny-oom",
+                1,
+                1,
+                1) == REDISMODULE_ERR) {
+        throw Error("fail to create PB.IMPORT command");
     }
 }
 
