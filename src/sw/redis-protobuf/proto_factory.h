@@ -92,6 +92,8 @@ private:
 
     void _load(const std::string &file);
 
+    std::string _canonicalize_path(std::string proto_dir) const;
+
     // Dir where .proto file are saved.
     std::string _proto_dir;
 

@@ -53,7 +53,7 @@ std::string FactoryErrorCollector::last_errors() const {
 }
 
 ProtoFactory::ProtoFactory(const std::string &proto_dir) :
-                            _proto_dir(proto_dir),
+                            _proto_dir(_canonicalize_path(proto_dir)),
                             _importer(&_source_tree, &_error_collector) {
     _source_tree.MapPath("", _proto_dir);
 
@@ -113,11 +113,14 @@ void ProtoFactory::load(const std::string &filename, const std::string &content)
     }
 
     auto path = _proto_dir + "/" + filename;
-    std::ofstream file(path);
-    if (!file) {
-        throw Error("failed to open proto file for writing: " + path);
+    {
+        // Ensure file is closed before loading.
+        std::ofstream file(path);
+        if (!file) {
+            throw Error("failed to open proto file for writing: " + path);
+        }
+        file << content;
     }
-    file << content;
 
     _load(filename);
 }
@@ -148,6 +151,19 @@ void ProtoFactory::_load(const std::string &file) {
     }
 
     _loaded_files.insert(file);
+}
+
+std::string ProtoFactory::_canonicalize_path(std::string proto_dir) const {
+    // Remove trailing '/'
+    while (!proto_dir.empty() && proto_dir.back() == '/') {
+        proto_dir.resize(proto_dir.size() - 1);
+    }
+
+    if (proto_dir.empty()) {
+        throw Error("invalid proto dir: " + proto_dir);
+    }
+
+    return proto_dir;
 }
 
 }
