@@ -30,8 +30,8 @@ int LastImportCommand::run(RedisModuleCtx *ctx, RedisModuleString ** /*argv*/, i
     try {
         assert(ctx != nullptr);
 
-        auto &module = RedisProtobuf::instance();
-        auto last_loaded_files = module.proto_factory()->last_loaded();
+        auto &m = RedisProtobuf::instance();
+        auto last_loaded_files = m.proto_factory()->last_loaded();
 
         RedisModule_ReplyWithArray(ctx, last_loaded_files.size() * 2);
 

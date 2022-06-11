@@ -32,8 +32,8 @@ int ImportCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
         auto args = _parse_args(argv, argc);
 
-        auto &module = RedisProtobuf::instance();
-        module.proto_factory()->load(args.filename, args.content);
+        auto &m= RedisProtobuf::instance();
+        m.proto_factory()->load(args.filename, args.content);
 
         RedisModule_ReplicateVerbatim(ctx);
 

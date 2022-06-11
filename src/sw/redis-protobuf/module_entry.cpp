@@ -26,9 +26,9 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     using namespace sw::redis::pb;
 
     try {
-        auto &module = RedisProtobuf::instance();
+        auto &m = RedisProtobuf::instance();
 
-        module.load(ctx, argv, argc);
+        m.load(ctx, argv, argc);
     } catch (const Error &e) {
         api::warning(ctx, "%s", e.what());
         return REDISMODULE_ERR;

@@ -169,16 +169,16 @@ void SetCommand::_create_msg(RedisModuleKey &key,
         const Path &path,
         const StringView &val) const {
     MsgUPtr msg;
-    auto &module = RedisProtobuf::instance();
+    auto &m = RedisProtobuf::instance();
     if (path.empty()) {
-        msg = module.proto_factory()->create(path.type(), val);
+        msg = m.proto_factory()->create(path.type(), val);
     } else {
-        msg = module.proto_factory()->create(path.type());
+        msg = m.proto_factory()->create(path.type());
         MutableFieldRef field(msg.get(), path);
         _set_field(field, val);
     }
 
-    if (RedisModule_ModuleTypeSetValue(&key, module.type(), msg.get()) != REDISMODULE_OK) {
+    if (RedisModule_ModuleTypeSetValue(&key, m.type(), msg.get()) != REDISMODULE_OK) {
         throw Error("failed to set message");
     }
 
@@ -197,9 +197,9 @@ void SetCommand::_set_msg(RedisModuleKey &key,
             throw Error("type mismatch");
         }
 
-        auto &module = RedisProtobuf::instance();
-        auto msg = module.proto_factory()->create(path.type(), val);
-        if (RedisModule_ModuleTypeSetValue(&key, module.type(), msg.get()) != REDISMODULE_OK) {
+        auto &m = RedisProtobuf::instance();
+        auto msg = m.proto_factory()->create(path.type(), val);
+        if (RedisModule_ModuleTypeSetValue(&key, m.type(), msg.get()) != REDISMODULE_OK) {
             throw Error("failed to set message");
         }
 

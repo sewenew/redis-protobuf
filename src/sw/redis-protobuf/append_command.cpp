@@ -37,16 +37,16 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         auto key = api::open_key(ctx, args.key_name, api::KeyMode::WRITEONLY);
         assert(key);
 
-        auto &module = RedisProtobuf::instance();
+        auto &m = RedisProtobuf::instance();
 
         long long len = 0;
-        if (!api::key_exists(key.get(), module.type())) {
-            auto msg = module.proto_factory()->create(path.type());
+        if (!api::key_exists(key.get(), m.type())) {
+            auto msg = m.proto_factory()->create(path.type());
             MutableFieldRef field(msg.get(), path);
             len = _append(field, args.elements);
 
             if (RedisModule_ModuleTypeSetValue(key.get(),
-                        module.type(),
+                        m.type(),
                         msg.get()) != REDISMODULE_OK) {
                 throw Error("failed to set message");
             }

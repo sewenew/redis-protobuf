@@ -97,9 +97,9 @@ void* RedisProtobuf::_rdb_load(RedisModuleIO *rdb, int encver) {
     try {
         assert(rdb != nullptr);
 
-        auto &module = RedisProtobuf::instance();
+        auto &m = RedisProtobuf::instance();
 
-        if (encver != module.encoding_version()) {
+        if (encver != m.encoding_version()) {
             throw Error("cannot load data of version: " + std::to_string(encver));
         }
 
@@ -109,7 +109,7 @@ void* RedisProtobuf::_rdb_load(RedisModuleIO *rdb, int encver) {
 
         auto type = std::string(type_str.str.get(), type_str.len);
 
-        auto *factory = module.proto_factory();
+        auto *factory = m.proto_factory();
 
         assert(factory != nullptr);
 
