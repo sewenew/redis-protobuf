@@ -25,6 +25,7 @@
 #include "schema_command.h"
 #include "merge_command.h"
 #include "import_command.h"
+#include "last_import_command.h"
 
 namespace sw {
 
@@ -163,6 +164,19 @@ void create_commands(RedisModuleCtx *ctx) {
                 1,
                 1) == REDISMODULE_ERR) {
         throw Error("fail to create PB.IMPORT command");
+    }
+
+    if (RedisModule_CreateCommand(ctx,
+                "PB.LASTIMPORT",
+                [](RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+                    LastImportCommand cmd;
+                    return cmd.run(ctx, argv, argc);
+                },
+                "readonly",
+                1,
+                1,
+                1) == REDISMODULE_ERR) {
+        throw Error("failed to create PB.LASTIMPORT command");
     }
 }
 

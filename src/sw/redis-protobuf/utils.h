@@ -155,6 +155,8 @@ std::vector<std::string> list_dir(const std::string &path);
 
 std::string extension(const std::string &file);
 
+void remove_file(const std::string &path);
+
 }
 
 }

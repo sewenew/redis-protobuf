@@ -58,6 +58,16 @@ ProtoFactory::ProtoFactory(const std::string &proto_dir) :
     _source_tree.MapPath("", _proto_dir);
 
     _load_protos(_proto_dir);
+
+    _async_loader = std::thread([this]() { this->_async_load(); });
+}
+
+ProtoFactory::~ProtoFactory() {
+    _stop_loader = true;
+    _cv.notify_one();
+    if (_async_loader.joinable()) {
+        _async_loader.join();
+    }
 }
 
 MsgUPtr ProtoFactory::create(const std::string &type) {
@@ -107,22 +117,24 @@ const gp::Descriptor* ProtoFactory::descriptor(const std::string &type) {
 }
 
 void ProtoFactory::load(const std::string &filename, const std::string &content) {
-    auto iter = _loaded_files.find(filename);
-    if (iter != _loaded_files.end()) {
-        throw Error("file already loaded: " + filename);
-    }
-
-    auto path = _proto_dir + "/" + filename;
     {
-        // Ensure file is closed before loading.
-        std::ofstream file(path);
-        if (!file) {
-            throw Error("failed to open proto file for writing: " + path);
-        }
-        file << content;
+        std::lock_guard<std::mutex> lock(_mtx);
+
+        _tasks[filename] = content;
     }
 
-    _load(filename);
+    _cv.notify_one();
+}
+
+std::unordered_map<std::string, std::string> ProtoFactory::last_loaded() {
+    std::unordered_map<std::string, std::string> last_loaded_files;
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+
+        _last_loaded_files.swap(last_loaded_files);
+    }
+
+    return last_loaded_files;
 }
 
 void ProtoFactory::_load_protos(const std::string &proto_dir) {
@@ -164,6 +176,67 @@ std::string ProtoFactory::_canonicalize_path(std::string proto_dir) const {
     }
 
     return proto_dir;
+}
+
+void ProtoFactory::_async_load() {
+    while (!_stop_loader) {
+        std::unordered_map<std::string, std::string> tasks;
+        {
+            std::unique_lock<std::mutex> lock(_mtx);
+            _cv.wait(lock, [this]() { return this->_stop_loader || !(this->_tasks).empty(); });
+
+            tasks.swap(_tasks);
+        }
+
+        std::unordered_map<std::string, std::string> status;
+        for (const auto &task : tasks) {
+            const auto &filename = task.first;
+            const auto &content = task.second;
+            try {
+                _load(filename, content);
+
+                status[filename] = "OK";
+            } catch (const Error &err) {
+                status[filename] = std::string("ERR ") + err.what();
+
+                io::remove_file(_absolute_path(filename));
+            }
+        }
+
+        if (!status.empty()) {
+            std::lock_guard<std::mutex> lock(_mtx);
+
+            for (auto &&ele : status) {
+                _last_loaded_files[ele.first] = std::move(ele.second);
+            }
+        }
+    }
+}
+
+void ProtoFactory::_load(const std::string &filename, const std::string &content) {
+    auto iter = _loaded_files.find(filename);
+    if (iter != _loaded_files.end()) {
+        throw Error("already imported");
+    }
+
+    _dump_to_disk(filename, content);
+
+    _load(filename);
+}
+
+void ProtoFactory::_dump_to_disk(const std::string &filename, const std::string &content) const {
+    auto path = _absolute_path(filename);
+
+    std::ofstream file(path);
+    if (!file) {
+        throw Error("failed to open proto file for writing: " + path);
+    }
+
+    file << content;
+}
+
+std::string ProtoFactory::_absolute_path(const std::string &path) const {
+    return _proto_dir + "/" + path;
 }
 
 }

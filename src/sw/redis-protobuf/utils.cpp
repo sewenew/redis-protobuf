@@ -16,6 +16,7 @@
 
 #include "utils.h"
 #include <sys/stat.h>
+#include <cstdio>
 #include <dirent.h>
 #include <cassert>
 #include <cctype>
@@ -201,6 +202,10 @@ std::string extension(const std::string &file) {
     }
 
     return file.substr(pos + 1);
+}
+
+void remove_file(const std::string &path) {
+    std::remove(path.data());
 }
 
 }

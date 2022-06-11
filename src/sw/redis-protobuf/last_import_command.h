@@ -14,8 +14,8 @@
    limitations under the License.
  *************************************************************************/
 
-#ifndef SEWENEW_REDISPROTOBUF_IMPORT_COMMAND_H
-#define SEWENEW_REDISPROTOBUF_IMPORT_COMMAND_H
+#ifndef SEWENEW_REDISPROTOBUF_LAST_IMPORT_COMMAND_H
+#define SEWENEW_REDISPROTOBUF_LAST_IMPORT_COMMAND_H
 
 #include "module_api.h"
 #include <string>
@@ -30,20 +30,12 @@ namespace redis {
 
 namespace pb {
 
-// command: PB.IMPORT file-path content
+// command: PB.LASTIMPORT
 // return:  OK status reply.
 // error:   If failing to import, return an error reply.
-class ImportCommand {
+class LastImportCommand {
 public:
     int run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;
-
-private:
-    struct Args {
-        std::string filename;
-        std::string content;
-    };
-
-    Args _parse_args(RedisModuleString **argv, int argc) const;
 };
 
 }
@@ -52,4 +44,4 @@ private:
 
 }
 
-#endif // end SEWENEW_REDISPROTOBUF_IMPORT_COMMAND_H
+#endif // end SEWENEW_REDISPROTOBUF_LAST_IMPORT_COMMAND_H
