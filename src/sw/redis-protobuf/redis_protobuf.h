@@ -72,7 +72,7 @@ private:
 
     static void _free_msg(void *value);
 
-    const int _MODULE_VERSION = 0;
+    const int _MODULE_VERSION = 1;
 
     const int _ENCODING_VERSION = 0;
 
