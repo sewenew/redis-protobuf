@@ -33,11 +33,14 @@ int LastImportCommand::run(RedisModuleCtx *ctx, RedisModuleString ** /*argv*/, i
         auto &m = RedisProtobuf::instance();
         auto last_loaded_files = m.proto_factory()->last_loaded();
 
-        RedisModule_ReplyWithArray(ctx, last_loaded_files.size() * 2);
+        RedisModule_ReplyWithArray(ctx, last_loaded_files.size());
 
         for (const auto &ele : last_loaded_files) {
             const auto &filename = ele.first;
             const auto &status = ele.second;
+
+            RedisModule_ReplyWithArray(ctx, 2);
+
             RedisModule_ReplyWithStringBuffer(ctx, filename.data(), filename.size());
             RedisModule_ReplyWithStringBuffer(ctx, status.data(), status.size());
         }
