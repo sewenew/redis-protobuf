@@ -42,6 +42,12 @@ int AppendCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         long long len = 0;
         if (!api::key_exists(key.get(), m.type())) {
             auto msg = m.proto_factory()->create(path.type());
+
+            assert(msg != nullptr);
+            if (msg->GetTypeName() != path.type()) {
+                throw Error("type mismatch");
+            }
+
             MutableFieldRef field(msg.get(), path);
             len = _append(field, args.elements);
 

@@ -37,6 +37,10 @@ int ClearCommand::run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) c
             auto *msg = api::get_msg_by_key(key.get());
             assert(msg != nullptr);
 
+            if (msg->GetTypeName() != args.path.type()) {
+                throw Error("type mismatch");
+            }
+
             _clear(*msg, args.path);
 
             RedisModule_ReplyWithLongLong(ctx, 1);
