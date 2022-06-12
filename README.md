@@ -1,5 +1,7 @@
 # redis-protobuf
 
+[中文交流群](http://github.com/sewenew/redis-protobuf/blob/master/Chinese.md)
+
 - [Overview](#overview)
     - [Motivation](#motivation)
 - [Installation](#installation)
@@ -100,7 +102,7 @@ mkdir compile
 
 cd compile
 
-cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake ..
 
 make
 ```
@@ -108,7 +110,7 @@ make
 If Protobuf is installed at non-default location, you should use `CMAKE_PREFIX_PATH` to specify the installation path of Protobuf.
 
 ```
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/path/to/Protobuf ..
+cmake -DCMAKE_PREFIX_PATH=/path/to/Protobuf ..
 ```
 
 When `make` is done, you should find *libredis-protobuf.so* (or *libredis-protobuf.dylib* on MacOS) under the *redis-protobuf/compile* directory.
@@ -187,7 +189,7 @@ List module info:
 1) 1) "name"
    2) "PB"
    3) "ver"
-   4) (integer) 0
+   4) (integer) 1
 ```
 
 Set message:
@@ -209,24 +211,24 @@ Get message:
 Set fields:
 
 ```
-127.0.0.1:6379> PB.SET key Msg.i 10
+127.0.0.1:6379> PB.SET key Msg /i 10
 (integer) 1
-127.0.0.1:6379> PB.SET key Msg.sub.s redis-protobuf
+127.0.0.1:6379> PB.SET key Msg /sub/s redis-protobuf
 (integer) 1
-127.0.0.1:6379> PB.SET key Msg.arr[0] 2
+127.0.0.1:6379> PB.SET key Msg /arr/0 2
 (integer) 1
 ```
 
 Get fields:
 
 ```
-127.0.0.1:6379> PB.GET key Msg.i
+127.0.0.1:6379> PB.GET key Msg /i
 (integer) 10
-127.0.0.1:6379> PB.GET key Msg.sub.s
+127.0.0.1:6379> PB.GET key Msg /sub/s
 "redis-protobuf"
-127.0.0.1:6379> PB.GET key Msg.arr[0]
+127.0.0.1:6379> PB.GET key Msg /arr/0
 (integer) 2
-127.0.0.1:6379> PB.GET key --FORMAT JSON Msg.sub
+127.0.0.1:6379> PB.GET key --FORMAT JSON Msg /sub
 "{\"s\":\"redis-protobuf\",\"i\":2}"
 ```
 
@@ -262,7 +264,7 @@ try {
     }
 
     // Set value with the serialized message.
-    redis.command("PB.SET", "key", "Msg", s);
+    assert(redis.command<long long>("PB.SET", "key", "Msg", s) == 1);
 
     // Get the message in binary format.
     s = redis.command<std::string>("PB.GET", "key", "--FORMAT", "BINARY", "Msg");
@@ -274,15 +276,15 @@ try {
     }
 
     // Set and get a message field.
-    redis.command("PB.SET", "key", "Msg.i", 10);
-    assert(redis.command<long long>("PB.GET", "key", "Msg.i") == 10);
+    assert(redis.command<long long>("PB.SET", "key", "Msg", "/i", 10) == 1);
+    assert(redis.command<long long>("PB.GET", "key", "Msg", "/i") == 10);
 
     // Set and get a nested message field.
-    redis.command("PB.SET", "key", "Msg.sub.s", "redis-protobuf");
-    assert(redis.command<std::string>("PB.GET", "key", "Msg.sub.s") == "redis-protobuf");
+    assert(redis.command<long long>("PB.SET", "key", "Msg", "/sub/s", "redis-protobuf") == 1);
+    assert(redis.command<std::string>("PB.GET", "key", "Msg", "/sub/s") == "redis-protobuf");
 
     // Delete the message.
-    redis.command("PB.DEL", "key", "Msg");
+    assert(redis.command<long long>("PB.DEL", "key", "Msg") == 1);
 } catch (const Error &e) {
     // Error handling
 }
@@ -301,25 +303,25 @@ If you are using Python, you can use [redis-py](https://github.com/andymccurdy/r
 '\x08\x01\x12\n\n\x06string\x10\x02\x1a\x03\x01\x02\x03'
 >>> r.execute_command('PB.GET', 'key', '--FORMAT', 'JSON', 'Msg')
 '{"i":1,"sub":{"s":"string","i":2},"arr":[1,2,3]}'
->>> r.execute_command('PB.SET', 'key', 'Msg.i', 2)
+>>> r.execute_command('PB.SET', 'key', 'Msg', '/i', 2)
 1L
->>> r.execute_command('PB.GET', 'key', 'Msg.i')
+>>> r.execute_command('PB.GET', 'key', 'Msg', '/i')
 2L
->>> r.execute_command('PB.SET', 'key', 'Msg.sub.s', 'redis-protobuf')
+>>> r.execute_command('PB.SET', 'key', 'Msg', '/sub/s', 'redis-protobuf')
 1L
->>> r.execute_command('PB.GET', 'key', 'Msg.sub.s')
+>>> r.execute_command('PB.GET', 'key', 'Msg', '/sub/s')
 'redis-protobuf'
->>> r.execute_command('PB.SET', 'key', 'Msg.arr[0]', 100)
+>>> r.execute_command('PB.SET', 'key', 'Msg', '/arr/0', 100)
 1L
->>> r.execute_command('PB.GET', 'key', 'Msg.arr[0]')
+>>> r.execute_command('PB.GET', 'key', 'Msg', '/arr/0')
 100L
 ```
 
 ## Commands
 
-### Path
+### Type and Path
 
-Most commands have a *path* argument, which specifies the message type or field. *path* is consist of package name (optional), message type (required), field name (optional), array index (optional) and map key (optional). I'll use the following *.proto* file as an example to show you how to specify a *path*.
+Most commands have *type* and *path* as arguments, which specifies the message type and field. We use *JSON Pointer*: [RFC 6901](https://datatracker.ietf.org/doc/html/rfc6901) to specify the *path*. I'll use the following *.proto* file as an example to show you how to specify *type* and *path*.
 
 **NOTE**: *path* IS CASE SENSITIVE.
 
@@ -341,38 +343,44 @@ message Msg {
 };
 ```
 
-If you specify package name in the *.proto* definition, e.g. `package redis.pb`, you must also specify the pacakge name in the path, and separate each name with double colons, i.e. `::`. For example, we can use the following to specify the type the message:
+#### Type
+
+*Type* is the type name of a protobuf message. If you specify package name in the *.proto* definition, e.g. `package redis.pb`, you must also specify the pacakge name as a part of the type name, separated with a dot, i.e. '.'. For example, we can use the following to specify the type the message:
 
 ```
-redis::pb::Msg
+redis.pb.Msg
 ```
 
 However, if you don't specify package name in the *.proto* definition, you can use the message type directly without any prefix.
 
-You can use a dot, i.e. `.`, to specify the field of a message. If the specified field is of message type, you can use another dot to specify the nested field:
+### Path
+
+With JSON Pointer, you can use `/` to address the field (and nested field) of a message.
 
 ```
-redis::pb::Msg.i
+/i
 
-redis::pb.Msg.sub.s
+/sub
+
+/sub/s
 ```
 
-If the field is an array, you can use the square bracket and an index, i.e. `[i]`, to specify the ith element. If the element is of message type, you can use a dot to specify the field of the element:
+If the field is an array, you can use array index (seperated by '/'), i.e. `/i`, to specify the ith element. If the element is of message type, you can use '/' to specify the field of the element:
 
 ```
-redis::pb::Msg.str_arr[2]
+/str_arr/2
 
-redis::pb::Msg.msg_arr[1].s
+/msg_arr/1/s
 ```
 
 The index is 0-based, and if the index is out-of-range, *redis-protobuf* will reply with an error.
 
-If the field is a map, you can use the square bracket and a key, i.e. `[key]`, to specify the corresponding value. If the value of message type, again, you can use a dot to specify the field of the value:
+If the field is a map, you can use a key (seperated by '/'), i.e. `/key`, to specify the corresponding value. If the value of message type, again, you can use a '/' to specify the field of the value:
 
 ```
-redis::pb::Msg.m[key]
+/m/key
 
-redis::pb::Msg.m[key].s
+/m/key/s
 ```
 
 ### PB.SET
@@ -380,13 +388,13 @@ redis::pb::Msg.m[key].s
 #### Syntax
 
 ```
-PB.SET key [--NX | --XX] [--EX seconds | --PX milliseconds] path value
+PB.SET key [--NX | --XX] [--EX seconds | --PX milliseconds] type [path] value
 ```
 
-- If the *path* specifies the message type, set the whole message with the given *value*.
-- If the *path* specifies a field, set the corresponding field with the given *value*.
+- If the *path* is omitted, set the whole message with the given *value*.
+- Otherwise, set the corresponding field with the given *value*.
 
-**NOTE**: Since Protobuf fields are optional, when setting the whole message, you can only set parts of fields of this message. The following example only sets `Msg.i`, and leave other fields unset.
+**NOTE**: Since Protobuf fields are optional, when setting the whole message, you can only set parts of fields of this message. The following example only sets `/i` field, and leave other fields unset.
 
 ```
 127.0.0.1:6379> PB.SET key Msg '{"i" : 1}'
@@ -417,8 +425,8 @@ Integer reply: 1 if set successfully. 0, otherwise, e.g. option *--NX* has been 
 
 Return an error reply in the following cases:
 
-- *path* specifies a field, and the field doesn't exist.
-- *path* specifies a message type, and the type doesn't match the type of the message saved in *key*, i.e. try to overwrite a *key*, in which the message is of a different type. See the examples part for an example.
+- The field specified by *path*, doesn't exist.
+- *type* doesn't match the type of the message saved in *key*, i.e. try to overwrite a *key*, in which the message is of a different type. See the examples part for an example.
 - *value* doesn't match the type of the field.
 
 #### Time Complexity
@@ -430,11 +438,11 @@ O(1)
 ```
 127.0.0.1:6379> PB.SET key Msg '{"i" : 1, "sub" : {"s" : "string", "i" : 2}, "arr" : [1, 2, 3]}'
 (integer) 1
-127.0.0.1:6379> PB.SET key Msg.i 10
+127.0.0.1:6379> PB.SET key Msg /i 10
 (integer) 1
-127.0.0.1:6379> PB.SET key Msg.sub.s redis-protobuf
+127.0.0.1:6379> PB.SET key Msg /sub/s redis-protobuf
 (integer) 1
-127.0.0.1:6379> PB.SET key Msg.arr[0] 2
+127.0.0.1:6379> PB.SET key Msg /arr/0 2
 (integer) 1
 127.0.0.1:6379> PB.SET key SubMsg '{"s" : "hello"}'
 (error) ERR type mismatch
@@ -445,18 +453,16 @@ O(1)
 #### Syntax
 
 ```
-PB.GET key [--FORMAT BINARY|JSON] path
+PB.GET key [--FORMAT BINARY|JSON] type [path]
 ```
 
-- If *path* specifies a field, return the value of that field.
-- If *path* specifies a message type, return the whole message in *key*.
-
-**NOTE**: Even if you want to get the whole Protobuf message, you need to specify the *path* as the type of the message. If type mismatches, you'll get an error reply.
+- If *path* is omitted, return the whole message in *key*.
+- Otherwise, return the value of that field.
 
 #### Options
 
 - **--FORMAT**: If the field at *path* is of message type, this option specifies the format of the return value. If the field is of other types, this option is ignored.
-    - **BINARY**: return the value as a binary string by serializing the Protobuf message. This is the default format.
+    - **BINARY**: return the value as a binary string by serializing the Protobuf message.
     - **JSON**: return the value as a JSON string by converting the Protobuf message to JSON.
 
 #### Return Value
@@ -466,15 +472,15 @@ Reply type is depends on the type of the field at *path*.
 - Integer reply: if the field is of integer or enum type.
 - Bulk string reply: if the field is of string or message type.
 - Simple string reply: if the field is of boolean or floating-point type.
-- Array reply: if the field is repeated.
+- Array reply: if the field is repeated or map type.
 - Nil reply: if *key* doesn't exist.
 
 #### Error
 
 Return an error reply in the following cases:
 
-- If *path* specifies a field, and the field doesn't exist.
-- If *path* specifies a message type, and the type doesn't match the type of the message saved in *key*.
+- If the field specified by *path*, doesn't exist.
+- If the specified type doesn't match the type of the message saved in *key*.
 
 #### Time Complexity
 
@@ -487,13 +493,13 @@ O(1)
 "\b\n\x12\x12\n\x0eredis-protobuf\x10\x02\x1a\x03\x02\x02\x03"
 127.0.0.1:6379> PB.GET key --FORMAT JSON Msg
 "{\"i\":10,\"sub\":{\"s\":\"redis-protobuf\",\"i\":2},\"arr\":[2,2,3]}"
-127.0.0.1:6379> PB.GET key Msg.i
+127.0.0.1:6379> PB.GET key Msg /i
 (integer) 10
-127.0.0.1:6379> PB.GET key --FORMAT JSON Msg.sub
+127.0.0.1:6379> PB.GET key --FORMAT JSON Msg /sub
 "{\"s\":\"redis-protobuf\",\"i\":2}"
-127.0.0.1:6379> PB.GET key Msg.arr[0]
+127.0.0.1:6379> PB.GET key Msg /arr/0
 (integer) 2
-127.0.0.1:6379> PB.GET key Msg.arr
+127.0.0.1:6379> PB.GET key Msg /arr
 1) (integer) 2
 2) (integer) 2
 3) (integer) 3
@@ -504,12 +510,12 @@ O(1)
 #### Syntax
 
 ```
-PB.DEL key path
+PB.DEL key type [path]
 ```
 
-- If *path* specifies an array element, e.g. `Msg.arr[0]`, delete the corresponding element from the array.
-- If *path* specifies a map value, e.g. `Msg.m[key]`, delete the corresponding key-value pair from the map.
-- If *path* specifies a message type, delete the key.
+- If *path* specifies an array element, e.g. `/arr/0`, delete the corresponding element from the array.
+- If *path* specifies a map value, e.g. `/m/key`, delete the corresponding key-value pair from the map.
+- If *path* is omitted, delete the key.
 
 #### Return Value
 
@@ -519,9 +525,9 @@ Integer reply: 1 if *key* exists, 0 othewise.
 
 Return an error reply in the following cases:
 
-- *path* specifies a field, and the field doesn't exist
+- The field specified by *path*, doesn't exist
 - The field is not an array element or a map value.
-- *path* specifies a message type, and the type doesn't match the type of the message saved in *key*.
+- The specifies *type* doesn't match the type of the message saved in *key*.
 
 #### Time Complexity
 
@@ -532,7 +538,7 @@ Return an error reply in the following cases:
 #### Examples
 
 ```
-127.0.0.1:6379> PB.DEL key Msg.arr[0]
+127.0.0.1:6379> PB.DEL key Msg /arr/0
 (integer) 1
 127.0.0.1:6379> PB.DEL key Msg
 (integer) 1
@@ -543,7 +549,7 @@ Return an error reply in the following cases:
 #### Syntax
 
 ```
-PB.APPEND key path value
+PB.APPEND key type path element [element, element...]
 ```
 
 - If the field at *path* is a string, append *value* string to the field.
@@ -559,7 +565,7 @@ Integer reply: The length of the string or the size of the array after the appen
 
 Return an error reply in the following cases:
 
-- *path* doesn't exist.
+- The field specified by *path*, doesn't exist.
 - The field at *path* is not a string or array.
 
 #### Time Complexity
@@ -569,9 +575,9 @@ Amortized O(1)
 #### Examples
 
 ```
-127.0.0.1:6379> pb.append key Msg.sub.s WithTail
+127.0.0.1:6379> pb.append key Msg /sub/s WithTail
 (integer) 14
-127.0.0.1:6379> pb.append key Msg.arr 4
+127.0.0.1:6379> pb.append key Msg /arr 4
 (integer) 4
 ```
 
@@ -580,13 +586,14 @@ Amortized O(1)
 #### Syntax
 
 ```
-PB.LEN key path
+PB.LEN key type [path]
 ```
 
 - If the field at *path* is a string, return the length of the string.
 - If the field at *path* is an array, return the size of the array.
 - If the field at *path* is a map, return the size of the map.
 - If the field at *path* is a message, return the length of the serialized binary string of the message.
+- If *path* is omitted, return the length of the serialized binary string of whole message.
 
 #### Return Value
 
@@ -608,9 +615,9 @@ O(1)
 ```
 127.0.0.1:6379> PB.LEN key Msg
 (integer) 28
-127.0.0.1:6379> PB.LEN key Msg.sub.s
+127.0.0.1:6379> PB.LEN key Msg /sub/s
 (integer) 14
-127.0.0.1:6379> PB.LEN key Msg.arr
+127.0.0.1:6379> PB.LEN key Msg /arr
 (integer) 4
 ```
 
@@ -619,11 +626,12 @@ O(1)
 #### Syntax
 
 ```
-PB.CLEAR key path
+PB.CLEAR key type [path]
 ```
 
 - If *path* specifies a message type, clear the message in *key*.
 - If *path* specifies a field, clear the field.
+- If *path* is omitted, clear the whole message, NOT delete!
 
 Please check the Protubuf doc for the definition of **clear**.
 
@@ -635,7 +643,7 @@ Integer reply: 1 if the *key* exists, 0 otherwise.
 
 Return an error reply in the following cases:
 
-- *path* specifies a message type, and the type doesn't match the type of the message saved in *key*.
+- The specified *type* doesn't match the type of the message saved in *key*.
 - *path* doesn't exist.
 
 #### Time Complexity
@@ -645,9 +653,9 @@ O(1)
 #### Examples
 
 ```
-127.0.0.1:6379> PB.CLEAR key i
+127.0.0.1:6379> PB.CLEAR key Msg
 (integer) 1
-127.0.0.1:6379> PB.CLEAR key Msg.arr
+127.0.0.1:6379> PB.CLEAR key Msg /arr
 (integer) 1
 127.0.0.1:6379> PB.CLEAR non-exist-key Msg
 (integer) 0
@@ -658,12 +666,12 @@ O(1)
 #### Syntax
 
 ```
-PB.MERGE key path value
+PB.MERGE key type [path] value
 ```
 
-- If *path* specifies a message type, parse *value* to a message, and merge it into the message in *key*.
 - If *path* specifies a field, merge the *value* into the field.
 - If *key* doesn't exist, this command behaves as *PB.SET*.
+- If *path* is omitted, parse *value* to a message, and merge it into the message in *key*.
 
 Please check the Protubuf doc for the definition of **merge**.
 
@@ -675,7 +683,7 @@ Integer reply: 1 if the *key* exists, 0 otherwise.
 
 Return an error reply in the following cases:
 
-- *path* specifies a message type, and the type doesn't match the type of the message saved in *key*.
+- The specified *type*, doesn't match the type of the message saved in *key*.
 - *path* doesn't exist.
 
 #### Time Complexity
@@ -701,10 +709,6 @@ Get the message type of message in *key*.
 
 - Simple string reply: The Protobuf message type, if *key* exists.
 - Nil reply: If *key* doesn't exist.
-
-#### Error
-
-Return an error reply in the following cases:
 
 #### Time Complexity
 
@@ -732,10 +736,6 @@ Get the schema of the given Protobuf message *type*.
 - Bulk string reply: The schema of the given *type*.
 - Nil reply: If the *type* doesn't exist.
 
-#### Error
-
-Return an error reply in the following cases:
-
 #### Time Complexity
 
 O(1)
@@ -745,6 +745,66 @@ O(1)
 ```
 127.0.0.1:6379> PB.SCHEMA Msg
 "message Msg {\n  int32 i = 1;\n  SubMsg sub = 2;\n  repeated int32 arr = 3;\n}\n"
+```
+
+### PB.IMPORT
+
+#### Syntax
+
+```
+PB.IMPORT filename content
+```
+
+Import a protobuf file asynchronously. If the file has been imported successfully, the file will be persisted in `proto-directory`.
+
+**NOTE**:
+
+- Since this command runs asynchronously, you need to use [PB.LASTIMPORT](#pblastimport) to check the importing result.
+- If a file has already been imported, you cannot re-import it with this command, i.e. you cannot update an already imported proto file. Instead, you need to update the file on disk, and restart Redis server.
+
+#### Return Value
+
+- Simple string reply: "OK"
+
+#### Time Complexity
+
+O(1)
+
+#### Examples
+
+```
+127.0.0.1:6379> PB.IMPORT test.proto 'syntax="proto3"; message M { int32 i = 1; }'
+OK
+```
+
+### PB.LASTIMPORT
+
+#### Syntax
+
+```
+PB.LASTIMPORT
+```
+
+Get the importing result of all imported proto files since last call to this command.
+
+Since `PB.IMPORT` runs asynchronously, the importing result will be recorded. When `PB.LASTIMPORT` is called, all these records will be returned to client, and these records will be cleared on the server side. So if you call `PB.LASTIMPORT` twice, without calling `PB.IMPORT` between these two calls of `PB.LASTIMPORT`, the second calls will return empty array reply.
+
+#### Return Value
+
+- Array reply: Status of last imported protobuf files. For each file, if it's imported successfully, the status is "OK". Otherwise, the status is an error message.
+
+#### Time Complexity
+
+O(1)
+
+#### Examples
+
+```
+127.0.0.1:6379> PB.LASTIMPORT
+1) 1) "msg1.proto"
+   2) "ERR failed to load msg1.proto\nerror:...
+2) 1) "msg2.proto"
+   2) "OK"
 ```
 
 ## Author
