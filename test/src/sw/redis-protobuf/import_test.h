@@ -17,7 +17,7 @@
 #ifndef SEWENEW_REDISPROTOBUF_TEST_IMPORT_TEST_H
 #define SEWENEW_REDISPROTOBUF_TEST_IMPORT_TEST_H
 
-#include <sw/redis++/redis++.h>
+#include "proto_test.h"
 
 namespace sw {
 
@@ -27,14 +27,12 @@ namespace pb {
 
 namespace test {
 
-class ImportTest {
+class ImportTest : public ProtoTest {
 public:
-    explicit ImportTest(sw::redis::Redis &redis) : _redis(redis) {}
-
-    void run();
+    explicit ImportTest(sw::redis::Redis &r) : ProtoTest("PB.IMPORT", r) {}
 
 private:
-    sw::redis::Redis &_redis;
+    virtual void _run(sw::redis::Redis &r) override;
 };
 
 }

@@ -17,7 +17,7 @@
 #ifndef SEWENEW_REDISPROTOBUF_TEST_CLEAR_TEST_H
 #define SEWENEW_REDISPROTOBUF_TEST_CLEAR_TEST_H
 
-#include <sw/redis++/redis++.h>
+#include "proto_test.h"
 
 namespace sw {
 
@@ -27,14 +27,12 @@ namespace pb {
 
 namespace test {
 
-class ClearTest {
+class ClearTest : public ProtoTest {
 public:
-    explicit ClearTest(sw::redis::Redis &redis) : _redis(redis) {}
-
-    void run();
+    explicit ClearTest(sw::redis::Redis &r) : ProtoTest("PB.CLEAR", r) {}
 
 private:
-    sw::redis::Redis &_redis;
+    virtual void _run(sw::redis::Redis &r) override;
 };
 
 }

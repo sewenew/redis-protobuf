@@ -25,20 +25,20 @@ namespace pb {
 
 namespace test {
 
-void TypeTest::run() {
+void TypeTest::_run(sw::redis::Redis &r) {
     auto key = test_key("type");
 
-    KeyDeleter deleter(_redis, key);
+    KeyDeleter deleter(r, key);
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 R"({"i" : 1})") == 1,
             "failed to test pb.type command");
 
-    auto type = _redis.command<sw::redis::OptionalString>("PB.TYPE", key);
+    auto type = r.command<sw::redis::OptionalString>("PB.TYPE", key);
     REDIS_ASSERT(type && *type == "Msg",
             "failed to test pb.type command");
 
-    type = _redis.command<std::string>("PB.TYPE", "sw.redis.pb.not-exist-Msg-type");
+    type = r.command<sw::redis::OptionalString>("PB.TYPE", "sw.redis.pb.not-exist-Msg-type");
     REDIS_ASSERT(!type, "failed to test pb.type command");
 }
 

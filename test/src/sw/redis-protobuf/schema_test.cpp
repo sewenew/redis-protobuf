@@ -25,11 +25,12 @@ namespace pb {
 
 namespace test {
 
-void SchemaTest::run() {
-    auto schema = _redis.command<sw::redis::OptionalString>("Msg");
+void SchemaTest::_run(sw::redis::Redis &r) {
+    auto schema = r.command<sw::redis::OptionalString>("PB.SCHEMA", "Msg");
     REDIS_ASSERT(schema && !schema->empty(), "failed to test pb.schema command");
 
-    schema = _redis.command<sw::redis::OptionalString>("sw.redis.pb.not-exist-Msg-type");
+    schema = r.command<sw::redis::OptionalString>("PB.SCHEMA",
+            "sw.redis.pb.not-exist-Msg-type");
     REDIS_ASSERT(!schema, "failed to test pb.schema command");
 }
 

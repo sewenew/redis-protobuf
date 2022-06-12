@@ -31,40 +31,33 @@ int main() {
         auto r = sw::redis::Redis("tcp://127.0.0.1");
 
         sw::redis::pb::test::AppendTest append_test(r);
-
-        std::cout << "pass PB.APPEND test" << std::endl;
+        append_test.run();
 
         sw::redis::pb::test::ClearTest clear_test(r);
-
-        std::cout << "pass PB.CLEAR test" << std::endl;
+        clear_test.run();
 
         sw::redis::pb::test::DelTest del_test(r);
-
-        std::cout << "pass PB.DEL test" << std::endl;
+        del_test.run();
 
         sw::redis::pb::test::TypeTest type_test(r);
-
-        std::cout << "pass PB.TYPE test" << std::endl;
+        type_test.run();
 
         sw::redis::pb::test::SchemaTest schema_test(r);
-
-        std::cout << "pass PB.SCHEMA test" << std::endl;
+        schema_test.run();
 
         sw::redis::pb::test::SetGetTest set_get_test(r);
-
-        std::cout << "pass PB.SET PB.GET test" << std::endl;
+        set_get_test.run();
 
         sw::redis::pb::test::LenTest len_test(r);
-
-        std::cout << "pass PB.LEN test" << std::endl;
+        len_test.run();
 
         sw::redis::pb::test::MergeTest merge_test(r);
-
-        std::cout << "pass PB.MERGE test" << std::endl;
+        merge_test.run();
 
         sw::redis::pb::test::ImportTest import_test(r);
+        import_test.run();
 
-        std::cout << "pass PB.IMPORT test" << std::endl;
+        std::cout << "pass all tests" << std::endl;
     } catch (const sw::redis::Error &e) {
         std::cerr << "failed to do test: " << e.what() << std::endl;
     }

@@ -25,40 +25,40 @@ namespace pb {
 
 namespace test {
 
-void AppendTest::run() {
+void AppendTest::_run(sw::redis::Redis &r) {
     auto key = test_key("append");
 
-    KeyDeleter deleter(_redis, key);
+    KeyDeleter deleter(r, key);
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 R"({"i" : 1})") == 1,
             "failed to test pb.append command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.APPEND", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.APPEND", key, "Msg",
                 "/sub/s", "abc") == 3,
             "failed to test appending string");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.APPEND", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.APPEND", key, "Msg",
                 "/sub/s", "123") == 6,
             "failed to test appending string");
 
-    REDIS_ASSERT(_redis.command<std::string>("PB.GET", key, "Msg",
+    REDIS_ASSERT(r.command<std::string>("PB.GET", key, "Msg",
                 "/sub/s") == "abc123",
             "failed to test pb.append");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.APPEND", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.APPEND", key, "Msg",
                 "/arr", 1, 2) == 2,
             "failed to test appending array");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.APPEND", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.APPEND", key, "Msg",
                 "/arr", 3, 4) == 4,
             "failed to test appending array");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.GET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.GET", key, "Msg",
                 "/arr/0") == 1,
             "failed to test pb.append");
     try {
-        _redis.command<long long>("PB.APPEND", key, "Msg",
+        r.command<long long>("PB.APPEND", key, "Msg",
                 "/i", 2);
         REDIS_ASSERT(false, "failed to test pb.append");
     } catch (const sw::redis::Error &) {

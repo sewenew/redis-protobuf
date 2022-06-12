@@ -25,25 +25,31 @@ namespace pb {
 
 namespace test {
 
-void DelTest::run() {
+void DelTest::_run(sw::redis::Redis &r) {
     auto key = test_key("del");
 
-    KeyDeleter deleter(_redis, key);
+    KeyDeleter deleter(r, key);
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 R"({"i" : 1, "arr" : [1, 2], "m" : {"key" : "val"}})") == 1,
             "failed to test pb.del command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.DEL", key, "Msg", "/arr") == 1 &&
-                _redis.command<long long>("PB.LEN", key, "Msg", "/arr") == 0,
+    REDIS_ASSERT(r.command<long long>("PB.DEL", key, "Msg", "/arr/0") == 1 &&
+                r.command<long long>("PB.LEN", key, "Msg", "/arr") == 1,
+            "failed to test del array element");
+    /*
+    TODO: support delete whole array and whole map, and map element
+    REDIS_ASSERT(r.command<long long>("PB.DEL", key, "Msg", "/arr") == 1 &&
+                r.command<long long>("PB.LEN", key, "Msg", "/arr") == 0,
             "failed to test del array");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.DEL", key, "Msg", "/m") == 1 &&
-                _redis.command<long long>("PB.LEN", key, "Msg", "/m") == 0,
+    REDIS_ASSERT(r.command<long long>("PB.DEL", key, "Msg", "/m") == 1 &&
+                r.command<long long>("PB.LEN", key, "Msg", "/m") == 0,
             "failed to test del map");
+            */
 
-    REDIS_ASSERT(_redis.command<long long>("PB.DEL", key, "Msg") == 1 &&
-                _redis.exists(key) == 0,
+    REDIS_ASSERT(r.command<long long>("PB.DEL", key, "Msg") == 1 &&
+                r.exists(key) == 0,
             "failed to test del message");
 }
 

@@ -14,10 +14,10 @@
    limitations under the License.
  *************************************************************************/
 
-#ifndef SEWENEW_REDISPROTOBUF_TEST_LEN_TEST_H
-#define SEWENEW_REDISPROTOBUF_TEST_LEN_TEST_H
+#ifndef SEWENEW_REDISPROTOBUF_TEST_PROTO_TEST_H
+#define SEWENEW_REDISPROTOBUF_TEST_PROTO_TEST_H
 
-#include "proto_test.h"
+#include <sw/redis++/redis++.h>
 
 namespace sw {
 
@@ -27,12 +27,25 @@ namespace pb {
 
 namespace test {
 
-class LenTest : public ProtoTest {
+class ProtoTest {
 public:
-    explicit LenTest(sw::redis::Redis &r) : ProtoTest("PB.LEN", r) {}
+    ProtoTest(const std::string &name, sw::redis::Redis &r) :
+        _name(name), _redis(r) {}
+
+    virtual ~ProtoTest() = default;
+
+    void run();
+
+    const std::string& name() const {
+        return _name;
+    }
 
 private:
-    virtual void _run(sw::redis::Redis &r) override;
+    virtual void _run(sw::redis::Redis &r) = 0;
+
+    std::string _name;
+
+    sw::redis::Redis &_redis;
 };
 
 }
@@ -43,4 +56,4 @@ private:
 
 }
 
-#endif // end SEWENEW_REDISPROTOBUF_TEST_LEN_TEST_H
+#endif // endif SEWENEW_REDISPROTOBUF_TEST_PROTO_TEST_H

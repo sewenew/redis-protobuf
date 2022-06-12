@@ -16,6 +16,7 @@
 
 #include "set_get_test.h"
 #include "utils.h"
+#include <iostream>
 
 namespace sw {
 
@@ -25,51 +26,52 @@ namespace pb {
 
 namespace test {
 
-void SetGetTest::run() {
+void SetGetTest::_run(sw::redis::Redis &r) {
     auto key = test_key("set-get");
 
-    KeyDeleter deleter(_redis, key);
+    //KeyDeleter deleter(r, key);
+    r.command("PB.SET", "key", "Msg", R"({"i" : 1})");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 R"({"i" : 1})") == 1 &&
-                _redis.command<long long>("PB.GET", key, "Msg", "/i") == 1,
+                r.command<long long>("PB.GET", key, "Msg", "/i") == 1,
             "failed to test pb.set and pb.get command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 "/i", 2) == 1 &&
-                _redis.command<long long>("PB.GET", key, "Msg", "/i") == 2,
+                r.command<long long>("PB.GET", key, "Msg", "/i") == 2,
             "failed to test pb.set and pb.get command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 R"({"sub" : {"s" : "hello"}})") == 1 &&
-                _redis.command<std::string>("PB.GET", key, "Msg", "/sub/s") == "hello",
+                r.command<std::string>("PB.GET", key, "Msg", "/sub/s") == "hello",
             "failed to test pb.set and pb.get command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 "/sub/s", "world") == 1 &&
-                _redis.command<std::string>("PB.GET", key, "Msg", "/sub/s") == "world",
+                r.command<std::string>("PB.GET", key, "Msg", "/sub/s") == "world",
             "failed to test pb.set and pb.get command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 R"({"i" : 123, "sub" : {"s" : "hello", "i" : 123}, "arr" : [1, 2], "m" : {"k" : "v"}})") == 1 &&
-                _redis.command<std::string>("PB.GET", key, "Msg", "/sub/s") == "hello" &&
-                _redis.command<long long>("PB.GET", key, "Msg", "/arr/0") == 1,
+                r.command<std::string>("PB.GET", key, "Msg", "/sub/s") == "hello" &&
+                r.command<long long>("PB.GET", key, "Msg", "/arr/0") == 1,
             "failed to test pb.set and pb.get command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 "/m/key", "world") == 1 &&
-                _redis.command<std::string>("PB.GET", key, "Msg", "/m/key") == "world",
+                r.command<std::string>("PB.GET", key, "Msg", "/m/key") == "world",
             "failed to test pb.set and pb.get command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 R"({"arr" : [4, 5, 6]})") == 1,
             "failed to test pb.set command");
 
-    auto arr = _redis.command<std::vector<long long>>("PB.GET", key, "Msg", "/arr");
+    auto arr = r.command<std::vector<long long>>("PB.GET", key, "Msg", "/arr");
     auto tmp = std::vector<long long>{4, 5, 6};
     REDIS_ASSERT(arr == tmp, "failed to test pb.get command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "--NX", "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "--NX", "Msg",
                 "/sub/s", "world") == 0,
             "failed to test pb.set and pb.get command");
 }

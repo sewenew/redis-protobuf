@@ -19,6 +19,7 @@
 #include <string>
 #include <chrono>
 #include <thread>
+#include <iostream>
 #include "utils.h"
 
 namespace sw {
@@ -29,10 +30,10 @@ namespace pb {
 
 namespace test {
 
-void ImportTest::run() {
+void ImportTest::_run(sw::redis::Redis &r) {
     auto key = test_key("import");
 
-    KeyDeleter deleter(_redis, key);
+    KeyDeleter deleter(r, key);
 
     std::string name{"test_import.proto"};
     auto proto = R"(
@@ -43,18 +44,22 @@ message Msg {
     string s = 2;
 }
     )";
-    REDIS_ASSERT(_redis.command<void>("PB.IMPORT", name, proto
-            "failed to test pb.import command");
+    r.command<void>("PB.IMPORT", name, proto);
 
     // Ensure proto has been loaded
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    auto res = _redis.command<std::unordered_map<std::string, std::string>>("PB.LASTIMPORT");
-    REDIS_ASSERT(res.size() == 1 && res[name] == "OK");
+    auto res = r.command<std::unordered_map<std::string, std::string>>("PB.LASTIMPORT");
+    for (const auto &ele : res)
+        std::cerr << ele.first << "\t" << ele.second << std::endl;
+    REDIS_ASSERT(res.size() == 1 && res[name] == "OK",
+            "failed to test pb.import command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "sw.redis.pb.Msg", "/i", 123) &&
-            _redis.command<long long>("PB.GET", key, "/i") == 123,
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "sw.redis.pb.Msg", "/i", 123) &&
+            r.command<long long>("PB.GET", key, "sw.redis.pb.Msg", "/i") == 123,
         "failed to test pb.import command");
+}
+
 }
 
 }

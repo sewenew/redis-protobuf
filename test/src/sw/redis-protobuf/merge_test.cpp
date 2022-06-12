@@ -25,32 +25,32 @@ namespace pb {
 
 namespace test {
 
-void MergeTest::run() {
+void MergeTest::_run(sw::redis::Redis &r) {
     auto key = test_key("merge");
 
-    KeyDeleter deleter(_redis, key);
+    KeyDeleter deleter(r, key);
 
-    REDIS_ASSERT(_redis.command<long long>("PB.SET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 R"({"i" : 1, "m" : {"k1" : "v1"}})") == 1,
             "failed to test pb.merge command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.MERGE", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.MERGE", key, "Msg",
                 R"({"arr" : [1, 2]})") == 1,
             "failed to test pb.merge command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.GET", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.GET", key, "Msg",
                 "/arr/0") == 1,
             "failed to test pb.merge command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.LEN", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.LEN", key, "Msg",
                 "/arr") == 2,
             "failed to test pb.merge command");
 
-    REDIS_ASSERT(_redis.command<long long>("PB.MERGE", key, "Msg",
+    REDIS_ASSERT(r.command<long long>("PB.MERGE", key, "Msg",
                 R"({"m" : {"k2" : "v2"}})") == 1,
             "failed to test pb.merge command");
 
-    REDIS_ASSERT(_redis.command<std::string>("PB.LEN", key, "Msg",
+    REDIS_ASSERT(r.command<std::string>("PB.GET", key, "Msg",
                 "/m/k2") == "v2",
             "failed to test pb.merge command");
 }

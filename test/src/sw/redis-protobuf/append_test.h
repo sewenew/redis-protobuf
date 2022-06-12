@@ -17,7 +17,7 @@
 #ifndef SEWENEW_REDISPROTOBUF_TEST_APPEND_TEST_H
 #define SEWENEW_REDISPROTOBUF_TEST_APPEND_TEST_H
 
-#include <sw/redis++/redis++.h>
+#include "proto_test.h"
 
 namespace sw {
 
@@ -27,14 +27,12 @@ namespace pb {
 
 namespace test {
 
-class AppendTest {
+class AppendTest : public ProtoTest {
 public:
-    explicit AppendTest(sw::redis::Redis &redis) : _redis(redis) {}
-
-    void run();
+    explicit AppendTest(sw::redis::Redis &r) : ProtoTest("PB.APPEND", r) {}
 
 private:
-    sw::redis::Redis &_redis;
+    virtual void _run(sw::redis::Redis &r) override;
 };
 
 }
