@@ -11,5 +11,5 @@ message Msg {
     int32 i = 1;
     SubMsg sub = 2;
     repeated int32 arr = 3;
-    map<string, int32> m = 4;
+    map<string, string> m = 4;
 }

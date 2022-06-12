@@ -198,8 +198,6 @@ void ProtoFactory::_async_load() {
                 status[filename] = "OK";
             } catch (const Error &err) {
                 status[filename] = std::string("ERR ") + err.what();
-
-                io::remove_file(_absolute_path(filename));
             }
         }
 
@@ -221,7 +219,12 @@ void ProtoFactory::_load(const std::string &filename, const std::string &content
 
     _dump_to_disk(filename, content);
 
-    _load(filename);
+    try {
+        _load(filename);
+    } catch (const Error &) {
+        io::remove_file(_absolute_path(filename));
+        throw;
+    }
 }
 
 void ProtoFactory::_dump_to_disk(const std::string &filename, const std::string &content) const {

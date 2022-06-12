@@ -31,8 +31,10 @@ namespace redis {
 namespace pb {
 
 // command: PB.LASTIMPORT
-// return:  OK status reply.
-// error:   If failing to import, return an error reply.
+// return:  Array reply of the status of last imported proto files.
+// note:    This command returns status of all imported proto files since last
+//          call to this command. Once this command is called, the underlying
+//          records will be cleared.
 class LastImportCommand {
 public:
     int run(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) const;
