@@ -1,1 +1,0 @@
-c++ -std=c++17 -I /Users/jxgaxn/code/install/include -I /Users/jxgaxn/code/redis-plus-plus/install/include -o test test_main.cpp proto_test.cpp append_test.cpp clear_test.cpp del_test.cpp type_test.cpp schema_test.cpp set_get_test.cpp len_test.cpp merge_test.cpp import_test.cpp ~/code/install/lib/libhiredis.a ~/code/redis-plus-plus/install/lib/libredis++.a -pthread

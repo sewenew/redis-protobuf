@@ -29,8 +29,7 @@ namespace test {
 void SetGetTest::_run(sw::redis::Redis &r) {
     auto key = test_key("set-get");
 
-    //KeyDeleter deleter(r, key);
-    r.command("PB.SET", "key", "Msg", R"({"i" : 1})");
+    KeyDeleter deleter(r, key);
 
     REDIS_ASSERT(r.command<long long>("PB.SET", key, "Msg",
                 R"({"i" : 1})") == 1 &&

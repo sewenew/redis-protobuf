@@ -19,7 +19,6 @@
 #include <string>
 #include <chrono>
 #include <thread>
-#include <iostream>
 #include "utils.h"
 
 namespace sw {
@@ -50,8 +49,6 @@ message Msg {
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     auto res = r.command<std::unordered_map<std::string, std::string>>("PB.LASTIMPORT");
-    for (const auto &ele : res)
-        std::cerr << ele.first << "\t" << ele.second << std::endl;
     REDIS_ASSERT(res.size() == 1 && res[name] == "OK",
             "failed to test pb.import command");
 
