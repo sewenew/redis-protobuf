@@ -37,8 +37,6 @@ RUN set -ex;\
         mkdir -p "$REDISDIR/proto/google/protobuf" "$REDISDIR/proto/google/protobuf/util" "$REDISDIR/proto/google/protobuf/compiler" "$REDISDIR/modules" "$REDISDIR/conf";\
         cp /usr/src/redis-protobuf-master/docker/example.proto "$REDISDIR/proto";\
         cp /usr/src/protobuf-3.8.0-map-reflection/src/google/protobuf/*.proto "$REDISDIR/proto/google/protobuf";\
-        cp /usr/src/protobuf-3.8.0-map-reflection/src/google/protobuf/util/*.proto "$REDISDIR/proto/google/protobuf/util";\
-        cp /usr/src/protobuf-3.8.0-map-reflection/src/google/protobuf/compiler/*.proto "$REDISDIR/proto/google/protobuf/compiler";\
         cp /usr/src/redis-protobuf-master/compile/libredis-protobuf.so "$REDISDIR/modules";\
         echo 'loadmodule /usr/lib/redis/modules/libredis-protobuf.so --dir /usr/lib/redis/proto' > "$REDISDIR/conf/redis.conf";
 

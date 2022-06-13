@@ -298,23 +298,23 @@ If you are using Python, you can use [redis-py](https://github.com/andymccurdy/r
 >>> import redis
 >>> r = redis.StrictRedis(host='localhost', port=6379, db=0)
 >>> r.execute_command('PB.SET', 'key', 'Msg', '{"i" : 1, "sub" : {"s" : "string", "i" : 2}, "arr" : [1, 2, 3]}')
-1L
->>> r.execute_command('PB.GET', 'key', 'Msg')
-'\x08\x01\x12\n\n\x06string\x10\x02\x1a\x03\x01\x02\x03'
+1
+>>> r.execute_command('PB.GET', 'key', '--FORMAT', 'BINARY', 'Msg')
+b'\x08\x01\x12\n\n\x06string\x10\x02\x1a\x03\x01\x02\x03'
 >>> r.execute_command('PB.GET', 'key', '--FORMAT', 'JSON', 'Msg')
-'{"i":1,"sub":{"s":"string","i":2},"arr":[1,2,3]}'
+b'{"i":1,"sub":{"s":"string","i":2},"arr":[1,2,3]}'
 >>> r.execute_command('PB.SET', 'key', 'Msg', '/i', 2)
-1L
+1
 >>> r.execute_command('PB.GET', 'key', 'Msg', '/i')
-2L
+2
 >>> r.execute_command('PB.SET', 'key', 'Msg', '/sub/s', 'redis-protobuf')
-1L
+1
 >>> r.execute_command('PB.GET', 'key', 'Msg', '/sub/s')
-'redis-protobuf'
+b'redis-protobuf'
 >>> r.execute_command('PB.SET', 'key', 'Msg', '/arr/0', 100)
-1L
+1
 >>> r.execute_command('PB.GET', 'key', 'Msg', '/arr/0')
-100L
+100
 ```
 
 ## Commands
